@@ -14,7 +14,7 @@
       adempiere.site:
         condition: service_started
     ports:
-      - ${NGINX_UI_GATEWAY_HTTP_EXTERNAL_PORT}:${NGINX_UI_GATEWAY_HTTP_INTERNAL_PORT}
+      - ${NGINX_UI_GATEWAY_EXTERNAL_PORT}:${NGINX_UI_GATEWAY_INTERNAL_PORT}
       - ${NGINX_UI_GATEWAY_HTTPS_EXTERNAL_PORT}:${NGINX_UI_GATEWAY_HTTPS_INTERNAL_PORT}
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
