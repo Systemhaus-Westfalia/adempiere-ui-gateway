@@ -1,0 +1,11 @@
+
+  svfe-api-firmador:
+    image: svfe/svfe-api-firmador:v20230109
+    container_name: svfe-api-firmador
+    hostname: adempiere-ui-electronic-invoice
+    ports:
+      - "8113:8113"
+    volumes:
+      - "./postgresql/persistent_files/certificates:/uploads"  # Muß noch parametrisiert werden.
+    networks:  # von SHW hinnzugefügt
+      - adempiere_network
