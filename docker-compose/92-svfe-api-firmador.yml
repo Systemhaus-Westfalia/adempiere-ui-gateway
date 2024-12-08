@@ -7,5 +7,8 @@
       - "8113:8113"
     volumes:
       - "./postgresql/persistent_files/certificates:/uploads"  # Muß noch parametrisiert werden.
-    networks:  # von SHW hinnzugefügt
-      - adempiere_network
+      
+    # Von SHW hinzugefügt
+    # network_mode: host   # Auskommentieren bei Produktion. Verwenden, wenn man in LAN testet.
+    networks:              # Auskommentieren beim Test. In Produktion zu verwenden.
+      - adempiere_network  # Auskommentieren beim Test. In Produktion zu verwenden.
