@@ -1,7 +1,7 @@
 
   svfe-api-firmador:
     image: svfe/svfe-api-firmador:v20230109
-    container_name: svfe-api-firmador
+    container_name: adempiere-ui-gateway.svfe-api-firmador
     hostname: adempiere-ui-electronic-invoice
     ports:
       - "8113:8113"
