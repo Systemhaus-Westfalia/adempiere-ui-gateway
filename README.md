@@ -1,17 +1,15 @@
 # adempiere-ui-gateway
-This project implements a Default Gateway for ADempiere UI.
+This project implements a Stack for ADempiere UI.
+
+The stack consists of different containers that interact with each other to deliver the functionality of ADempiere.
 
 This API Gateway was created initially to offer an *ADempiere User Interface Gateway Definition*. It has evolved to a complete stack application. 
 
-One important scope for this project is gRPC [transcoding](https://cloud.google.com/endpoints/docs/grpc/transcoding).
+This application downloads the required images for each container, runs the configured containers and restores the database if needed on your local machine **just by calling a script**!
 
-See [this article](https://www.nginx.com/blog/deploying-nginx-plus-as-an-api-gateway-part-1/) for more info.
+It basically consists of a *docker compose* project that defines all services needed to run ADempiere, Postgres, ZK, Vue and other services.
 
-This application downloads the required images, runs the configured containers and restores the database if needed on your local machine **just by calling a script**!
-
-It consists of a *docker compose* project that defines all services needed to run ADempiere, Postgres, ZK, Vue and other services. 
-
-A configuration file (_.env_) define all modifiable values (e.g. release versions) to be used in the service creation; also a start script (_start-all.sh_) defines the stack, i.e. the services to be used. Any combination of the services offered is possible.
+A configuration file (_.env_) defines all modifiable values (e.g. release versions) to be used in the service creation; also a start script (_start-all.sh_) defines the stack, i.e. the services to be used. Any combination of the services offered is possible.
 
 When executed e.g. with the command _docker compose up_, the *docker compose* project eventually runs the services defined in *docker-compose files* as Docker containers.
 The running Docker containers comprise the application stack.
@@ -73,10 +71,10 @@ The application stack consists of the following services defined in the *docker-
 - **kafdrop**: A Kafka Cluster Queues Overview, Monitor and Administrator.
 - **dictionary-rs**: API RESTful to manage adempiere dictionary with OpenSearch as cache.
 - **keycloak**: User management on service *postgresql-service*.
-- **ui-gateway**: A reverse proxy and routing to redirect multiple services.
-- **s3-storage**: For attachments and files.
-- **s3-client**: Set default configuration of "s3-storage" service.
-- **s3-gateway-rs**: API RESTful to manage files with client.
+- **ui-gateway**: Unique access point acting as a reverse proxy and routing to redirect multiple services.
+- **s3-storage**: S3 (Simple Storage Service) for attachments and files.
+- **s3-client**: S3 (Simple Storage Service) default access configuration.
+- **s3-gateway-rs**: S3 (Simple Storage Service) API RESTful between ui-gateway and implemented S3 to manage files with client.
 - **opensearch-dashboards**: Display and monitor of OpenSearch indexes e.g. exported menus, smart browsers, forms, windows, processes.
 
 Additional objects defined in the *docker-compose files*:
