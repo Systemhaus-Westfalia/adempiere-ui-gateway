@@ -3,7 +3,7 @@ This project implements a Stack for ADempiere UI.
 
 The stack consists of different containers that interact with each other to deliver the functionality of ADempiere.
 
-This API Gateway was created initially to offer an *ADempiere User Interface Gateway Definition*. It has evolved to a complete stack application. 
+This API Gateway was created initially to offer an *ADempiere User Interface Gateway Definition*. It has evolved to a complete stack application.
 
 This application downloads the required images for each container, runs the configured containers and restores the database if needed on your local machine **just by calling a script**!
 
@@ -18,7 +18,7 @@ There are several _docker compose files_ that start different services, accordin
 Due to the technology used, it is highly recommended to have a good knowledge of _docker_ and _docker compose_ to work properly with this application.
 
 ### Benefits of the application:
-- In its simplest form, it can be used as a demo of the latest -or any- ADempiere version.
+- In its simplest form, it can be used as a demo of the latest -or any desired- ADempiere version.
 - No big installation hassle for getting it running: just execute the shell script **start-all.sh** .
 - It can run on different hosts just by changing
   - the target IP to the one of the host or
@@ -45,15 +45,15 @@ Due to the technology used, it is highly recommended to have a good knowledge of
 ### User's perspective
 From a user's point of view, the application consists of the following.
 Take note that the ports are defined in file *env_template.env* as external ports and can be changed if needed or desired.
-- A home web site accesible via port **80**
+- A home web site, accessible via port **80**
   From which all applications can be called
-- An ADempiere ZK UI accesible via path **/webui**
-- An ADempiere Vue UI accesible via path **/vue**
-- A Postgres database accesible e.g. by PGAdmin via port **55432**
-- An OpenSearch Dashboard accesible via port **5601**
+- An ADempiere ZK UI, accessible via path **/webui**
+- An ADempiere Vue UI, accessible via path **/vue**
+- A Postgres database, accessible e.g. by PGAdmin via port **55432**
+- An OpenSearch Dashboard, accessible via port **5601**
 - Access to Kafka Queue via port **29092**
-- A Kafdrop Kafka Queue Monitor and Administrator accesible via port **19000**
-- A DKron browser for monitoring scheduled jobs accesible via port **8899**
+- A Kafdrop Kafka Queue Monitor and Administrator, accessible via port **19000**
+- A DKron browser for monitoring scheduled jobs, accessible via port **8899**
 - A MinIO Console (actually a browser) for monitoring objects stored (like files, reports, images), accessible via port **9090**
 
 ### Application Stack
@@ -98,15 +98,15 @@ Additional objects defined in the *docker-compose files*:
 
 ### File Structure
 - *README.md*: this very file
-- *env_template.env*: template for definition of all variables used in docker composed files.  
+- *env_template.env*: template for definition of all variables used in docker composed files.
 Usually, this file is edited for testing and copied to *.env* before running docker compose.
 - *.env*: definition of all variables used in *docker-compose files*.
-- *docker compose service files*: there are several of them; each of these files define a service only.  
-It may exist more than one docker compose service file for every service (see [all docker compose service files](https://github.com/Systemhaus-Westfalia/adempiere-ui-gateway/tree/feature/flexible_services_definition/docker-compose)). This may be the case when a service is used in different configurations for different purposes/modes.  
+- *docker compose service files*: there are several of them; each of these files define a service only.
+It may exist more than one docker compose service file for every service (see [all docker compose service files](https://github.com/Systemhaus-Westfalia/adempiere-ui-gateway/tree/feature/flexible_services_definition/docker-compose)). This may be the case when a service is used in different configurations for different purposes/modes.
 
-  The combination of several of these docker compose service files implements the services needed for a special purpose/mode (as of now: *auth*, *cache*, *develop*, *storage*, *vue*, *default*).  
-  The definition of one service in a single file permits reutilization and the combination of existing services to new purposes/modes for which hitherto a new docker-compose file was needed. Also, as one service version is only defined once, possible repetitions and small unwanted different definitions in docker-compose files are avoided.  
-  See explanation of `start-all.sh` to understand how these files are used.  
+  The combination of several of these docker compose service files implements the services needed for a special purpose/mode (as of now: *auth*, *cache*, *develop*, *storage*, *vue*, *default*).
+  The definition of one service in a single file permits reutilization and the combination of existing services to new purposes/modes for which hitherto a new docker-compose file was needed. Also, as one service version is only defined once, possible repetitions and small unwanted different definitions in docker-compose files are avoided.
+  See explanation of `start-all.sh` to understand how these files are used.
 
   Example of docker compose service files are:
   - **01a-postgres_service_with_ports.yml**: one implementation of postgres service.
@@ -126,8 +126,8 @@ It may exist more than one docker compose service file for every service (see [a
   - **11a-vue_ui_service.yml**: implementation of Vue service.
   - **and more**: see [all docker compose service files](https://github.com/Systemhaus-Westfalia/adempiere-ui-gateway/tree/feature/flexible_services_definition/docker-compose).
 - *docker-compose legacy files*: initial way the services were implemented. Here all services are defined in one file.
-  Variables used in these files are taken from file *.env*.  
-**These files are now legacy**, i.e. they were the first attempt, but -due to more flexibility, reusability and scalability- the *docker compose service files*are now implemented (see preceeding section).  
+  Variables used in these files are taken from file *.env*.
+**These files are now legacy**, i.e. they were the first attempt, but -due to more flexibility, reusability and scalability- the *docker compose service files*are now implemented (see preceeding section).
 
   As of now, the existing docker compose legacy files are the following:
   - **docker-compose-standard.yml**: the default; when no other file is pecified, this file is taken.
@@ -136,20 +136,20 @@ It may exist more than one docker compose service file for every service (see [a
   - **docker-compose-cache.yml**:
   - **docker-compose-develop.yml**: services for development, for example with ports exposed
   - **docker-compose-storage.yml**
-  - **docker-compose-vue.yml**: for vue minimal stack services  
+  - **docker-compose-vue.yml**: for vue minimal stack services
 
   Eventually, as the *docker compose service files* will be updated and improved, the *docker compose legacy files* will divert from the actual functionality. That is why is not recommended to work with the *docker compose legacy files* anymore. They are useful when while testing the new *docker compose service files* some discrepancies/errors pop up and one wants to compare behavior.
-- `start-all.sh`: shell script to create and eventually automatically execute docker compose.  
+- `start-all.sh`: shell script to create and eventually automatically execute docker compose.
 
-  This bash script must be called with the docker-compose flag **-d** + one of the following parameters [**auth**, **cache**, **develop**, **storage**, **vue**, **default**].  
-It can also be called with the legacy flag  **-l** (this is only legacy and not intended to be continued).  
+  This bash script must be called with the docker-compose flag **-d** + one of the following parameters [**auth**, **cache**, **develop**, **storage**, **vue**, **default**].
+It can also be called with the legacy flag  **-l** (this is only legacy and not intended to be continued).
 
   First of all, the persistent directory (database) and the backup directory are created if not existent; then the file *env_template.env* is copied to *.env* and eventually Docker Compose is started for the file `docker-compose.yml`.
 
   Depending on the parameters, Docker Compose is executed for the eventually assembled `docker-compose.yml` file.
 
   Here, some examples of how the parameters work:
-  
+
     - **./start-all.sh** (default behavior without parameters)
       If the script is called without a flag, the 'standard' purpose/mode will be taken and also no legacy assumed (i.e. the docker compose service files for "standard" will be used to assemble the file `docker-compose.yml`).
     - **./start-all.sh -l** (default behavior, with legacy)
@@ -166,14 +166,14 @@ It can also be called with the legacy flag  **-l** (this is only legacy and not 
       (legacy behavior) The file `docker-compose-cache.yml` will be copied to `docker-compose.yml`, and docker compose will be executed with this file.
 
     In the end, a file named **docker-compose.yml** will always be created depending on the parameters passed, and docker compose will be executed with this file.
-    The file **docker-compose.yml** will be used only for the duration of the docker compose cycle.  
+    The file **docker-compose.yml** will be used only for the duration of the docker compose cycle.
     It will be deleted when `stop-all.sh` is executed
 - `stop-all.sh`: shell script to automatically stop all services that were started with the script `start-all.sh` and defined in file `docker-compose.yml`.
   The file `docker-compose.yml` is deleted after stopping all services.
-- `stop-and-delete-all.sh`: shell script to delete **all** containers, images, networks, cache and volumes, **including the ones** created without `start-all.sh` or by executing `docker-compose.yml`. 
+- `stop-and-delete-all.sh`: shell script to delete **all** containers, images, networks, cache and volumes, **including the ones** created without `start-all.sh` or by executing `docker-compose.yml`.
 **Be very careful when using this script, because it will reset everything you have of Docker**.
 
-    After executing this shell, no trace of the application will be left over. Only the persistent directory will not be affected, which must be manually deleted if desired.  
+    After executing this shell, no trace of the application will be left over. Only the persistent directory will not be affected, which must be manually deleted if desired.
 The file `docker-compose.yml` is deleted after stopping and deleting all objects.
 - `postgresql/Dockerfile`: the Dockerfile used.
   It mainly copies `postgresql/initdb.sh` to the container, so it can be executed at start.
@@ -190,13 +190,13 @@ The file `docker-compose.yml` is deleted after stopping and deleting all objects
 
   The name of the seed can be defined in `env_template.env`.
   The seed is a backup file created with psql.
-  If there is a seed, but a database exists already, there will be no restore.  
+  If there is a seed, but a database exists already, there will be no restore.
 
   This directory may also be useful when creating a backup: it can be created here, without needing to transfer it from the container to the host.
 - `postgresql/persistent_files`: directory on host used for persistency with the ZK container. It allows to share files bewteen the host and the ZK container.
 - *docs*: directory containing images and documents used in this README file.
 
-### Misc 
+### Misc-Browsers to Monitor different services
 **OpenSearch Dashboard**
 ![Selection_522](https://github.com/adempiere/adempiere-ui-gateway/assets/1789408/abe548f6-0ed1-4b91-b70d-d1d0729d9600)
 
@@ -221,7 +221,7 @@ This represents a danger as anybody can get access of any container via the expo
 Particularly dangerous is getting access to the Processors Service, where a processor can be defined and cause any harm.
 
 How to avoid this? By creating a Firewall before the host where the stack is implemented and by not exposing the host to the internet.
-Some brands like Azure, AWS or Digital Ocean offer a Firewall. 
+Some brands like Azure, AWS or Digital Ocean offer a Firewall.
 
 In the following image, an example how to configure a Firewall on Digital Ocean:
 ![image](https://github.com/user-attachments/assets/13c3e565-7bce-4d9d-abbb-6db8b2d6cb99)
@@ -313,7 +313,7 @@ The script `start-all.sh` carries out the steps of the automatic installation.
 
 Depending on the parameter following the `-d` flag, the script assembles the file **docker-compose.yml** by appending the contents of the corresponding docker compose service files; it then calls docker compose with it (`docker compose -f docker-compose.yml`).
 
-If no flag and/or parameter is given, the call will default to `docker compose -f docker-compose.yml` for the services combination **standard**.  
+If no flag and/or parameter is given, the call will default to `docker compose -f docker-compose.yml` for the services combination **standard**.
 If directories `postgresql/postgres_database` and `postgresql/backups` do not exist, they are created.
 
 **Legacy** (flag `-l`)
@@ -363,7 +363,7 @@ cd adempiere-ui-gateway/docker-compose
 ./start-all.sh -d default -l
 ```
 
-For legacy, the script `start-all.sh` copies the corresponding docker-compose file (one of `docker-compose-auth.yml`, `docker-compose-cache.yml`, `docker-compose-vue.yml`, etc.) to **docker-compose.yml**.  
+For legacy, the script `start-all.sh` copies the corresponding docker-compose file (one of `docker-compose-auth.yml`, `docker-compose-cache.yml`, `docker-compose-vue.yml`, etc.) to **docker-compose.yml**.
 Then, docker compose is executed on this file.
 
 ##### 2 Result Of Script Execution
@@ -392,7 +392,7 @@ The execution of `postgresql/initdb.sh` will be skipped if
 
 ## Open Applications
 - Project site: open browser and type in the following urls
-  - [http://localhost:80](http://localhost:80) 
+  - [http://localhost:80](http://localhost:80)
   - [http://localhost](http://localhost)
   - http://0.0.0.0/
   - httpp://api.adempiere.io (it must be configured to which host it points)
@@ -421,7 +421,7 @@ mkdir postgresql/backups
 ```
 ##### 3 Copy backup file (if restore is needed)
 - If you are executing this project for the first time or you want to restore the database, execute a database backup.
-- First, go to the backups directory 
+- First, go to the backups directory
   _cd .../adempiere-ui-gateway/docker-compose/postgresql/postgres_backups_
 - Here you can run a backup directly from host using the _docker exec_ command
   _docker exec -i adempiere-ui-gateway.postgresql pg_dump --no-owner -h localhost -U postgres adempiere > adempiere-$(date '+%Y-%m-%d').backup_
@@ -508,7 +508,7 @@ This application uses **Docker Compose** and as such, all docker and docker comp
 ```Shell
 docker compose  -f <filename> down
 ```
-##### Stop aAd Delete One Service (services defined in *docker-compose* files)
+##### Stop and Delete One Service (services defined in *docker-compose* files)
 ```Shell
 docker compose rm -s -f <service name>
 docker compose rm -s -f postgresql-service
@@ -547,9 +547,21 @@ docker compose ps -a
 ```
 
 ### Misc Commands
+##### Display all Services (docker compose must run; otherwise error "no configuration file provided: not found")
+```Shell
+docker compose config --services
+```
+
+
 ##### Display All Docker Images
 ```Shell
 docker images -a
+```
+
+##### Display All Docker Containers Started with Docker Compose
+```Shell
+docker compose ps -a
+docker compose ps -a --format "{{.ID}}: {{.Names}}"
 ```
 
 ##### Display All Docker Containers
