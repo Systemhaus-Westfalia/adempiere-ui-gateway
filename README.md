@@ -53,6 +53,7 @@ Take note that the ports are defined in file *env_template.env* as external port
 - An OpenSearch Dashboard accesible via port **5601**
 - A Kafdrop Kafka Queue Monitor and Administrator accesible via port **19000**
 - A DKron browser for monitoring scheduled jobs accesible via port **8899**
+- A MinIO Console (actually a browser) for monitoring objects stored (like files, reports, images), accessible via port **9090**
 
 ### Application Stack
 The application stack consists of the following services defined in the *docker-compose files* (and retrieved on the console with **docker compose ls**); these services will eventually run as containers:
