@@ -19,16 +19,16 @@
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/gateway/api_gateway.conf:/etc/nginx/api_gateway.conf
       - ./nginx/api_json_errors.conf:/etc/nginx/api_json_errors.conf
-      #- ./keys/api_keys.conf:/etc/nginx/api_keys.conf
       # dictionary
       - ./nginx/upstreams/dictionary_rs.conf:/etc/nginx/api_upstreams_conf.d/dictionary_rs.conf
-      - ./nginx/api/dictionary_rs/:/etc/nginx/api_conf.d/dictionary_rs/
+      - ./nginx/api/dictionary_rs.conf:/etc/nginx/api_conf.d/dictionary_rs.conf
       # grpc proxy
       - ./nginx/upstreams/adempiere_backend.conf:/etc/nginx/api_upstreams_conf.d/adempiere_backend.conf
-      - ./nginx/api/backend/:/etc/nginx/api_conf.d/backend/
+      - ./nginx/api/adempiere_backend.conf:/etc/nginx/api_conf.d/adempiere_backend.conf
       # vue
-      - ./nginx/upstreams/adempiere_frontend.conf:/etc/nginx/api_upstreams_conf.d/adempiere_frontend.conf
-      - ./nginx/api/main/vue.conf:/etc/nginx/api_conf.d/main/vue.conf
+      - ./nginx/upstreams/adempiere_vue.conf:/etc/nginx/api_upstreams_conf.d/adempiere_vue.conf
+      - ./nginx/api/adempiere_vue.conf:/etc/nginx/api_conf.d/adempiere_vue.conf
+      #- ./keys/api_keys.conf:/etc/nginx/api_keys.conf
       # time zone
       - ${TIMEZONE_PATH_ON_HOST}:${TIMEZONE_PATH_ON_CONTAINER}:${TIMEZONE_OPTIONS}    # Map the Timezone  of the host to the Timezone of the container
       - ${LOCALTIME_PATH_ON_HOST}:${LOCALTIME_PATH_ON_CONTAINER}:${LOCALTIME_OPTIONS} # Map the Localtime of the host to the Timezone of the container
