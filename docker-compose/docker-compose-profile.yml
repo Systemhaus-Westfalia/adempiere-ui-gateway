@@ -612,10 +612,18 @@ services:
       - storage
       - vue
       - zk
+    entrypoint: ["/docker-entrypoint.sh"]
+    command: ["nginx", "-g", "daemon off;"]
+    environment:
+      - ACTIVE_PROFILES=none
+      - COMPOSE_PROFILES=${COMPOSE_PROFILES:-none}  # Inyectamos los perfiles manualmente
     volumes:
+      - ./nginx/init-profiles.sh:/docker-entrypoint.d/40-init-profiles.sh
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/upstreams/:/etc/nginx/api_upstreams_conf.d/
-      - ./nginx/api/:/etc/nginx/api_conf.d/
+      - ./nginx/upstreams/:/etc/nginx/templates/upstreams/
+      # - ./nginx/upstreams/:/etc/nginx/api_upstreams_conf.d/
+      - ./nginx/api/:/etc/nginx/templates/api_conf.d/
+      # - ./nginx/api/:/etc/nginx/api_conf.d/
       - ./nginx/gateway/api_gateway.conf:/etc/nginx/api_gateway.conf
       - ./nginx/api_json_errors.conf:/etc/nginx/api_json_errors.conf
       #- ./keys/api_keys.conf:/etc/nginx/api_keys.conf
