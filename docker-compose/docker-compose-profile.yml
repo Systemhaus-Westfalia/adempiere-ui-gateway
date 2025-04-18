@@ -381,9 +381,15 @@ services:
     container_name: ${ENVOY_GRPC_PROXY_CONTAINER_NAME}
     hostname: ${ENVOY_GRPC_PROXY_HOSTNAME}
     depends_on:
-      - adempiere-grpc-server # Always start with envoy-proxy
-      # - adempiere-processor
-      # - adempiere-report-engine
+      adempiere-grpc-server:
+        condition: service_started
+        required: true # Always start with envoy-proxy
+      adempiere-processor:
+        condition: service_started
+        required: false
+      adempiere-report-engine:
+        condition: service_started
+        required: false
     healthcheck:
       test: "bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/${ENVOY_GRPC_PROXY_BACKEND_PORT}; exit $?;'"
       interval: 10s
