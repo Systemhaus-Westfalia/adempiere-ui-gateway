@@ -142,6 +142,7 @@ services:
       SECRET_KEY: ${S3_GATEWAY_RS_SECRET_KEY}
       BUCKET_NAME: ${S3_GATEWAY_RS_BUCKET_NAME}
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
+      MANAGE_HTTPS: ${S3_GATEWAY_RS_MANAGE_HTTPS}
     volumes:
       - ${TIMEZONE_PATH_ON_HOST}:${TIMEZONE_PATH_ON_CONTAINER}:${TIMEZONE_OPTIONS}    # Map the Timezone  of the host to the Timezone of the container
       - ${LOCALTIME_PATH_ON_HOST}:${LOCALTIME_PATH_ON_CONTAINER}:${LOCALTIME_OPTIONS} # Map the Localtime of the host to the Timezone of the container
