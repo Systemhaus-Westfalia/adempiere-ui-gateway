@@ -19,6 +19,31 @@ Document bugs, gotchas, workarounds, and debugging tips here.
 
 ---
 
+## Deployment & Configuration
+
+### Server Has Local .env Modifications Not in Git
+**Symptoms:**
+- Running container versions differ from what's expected based on git commit
+- `docker compose convert` output shows different image versions than env_template.env in git
+
+**Cause:**
+- .env and env_template.env files manually modified on production server
+- Changes not committed to git (intentional for testing or quick fixes)
+
+**Workaround/Solution:**
+- Always document both: git baseline commit AND actual running configuration
+- Use `docker compose convert` on server to see actual resolved values
+- Check running container versions: `docker ps --format "{{.Names}}: {{.Image}}"`
+- When troubleshooting, verify against actual deployment, not just git
+
+**Example (as of 2026-02-08):**
+- Git commit c51d7c8: adempiere-zk `jetty-3.9.4.001-shw-1.1.39`
+- Actually running: adempiere-zk `jetty-3.9.4.001-shw-1.1.45`
+
+**Date discovered:** 2026-02-08
+
+---
+
 ## Docker & Networking
 
 ### Docker Bypasses Host Firewall
