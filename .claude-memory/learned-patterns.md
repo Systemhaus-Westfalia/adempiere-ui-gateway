@@ -19,6 +19,71 @@ Best practices, tips, and patterns discovered while working with ADempiere UI Ga
 
 ---
 
+## gRPC & Envoy Proxy Patterns
+
+### Adding New gRPC Services for Transcoding
+**Context:**
+- ADempiere uses Envoy proxy for gRPC-to-JSON transcoding
+- When new services are added to the gRPC server, Envoy needs updated proto descriptors
+- Easy to miss updating docker-compose volume mounts, causing startup failures
+
+**Approach - The Three-Step Checklist:**
+When adding new gRPC services, you MUST update all three:
+
+1. **Proto Descriptor File** (`.dsc` or `.pb`)
+   - Regenerate from source `.proto` files using `protoc`
+   - Must include ALL service definitions (old + new)
+   - File location: `docker-compose/envoy/definitions/adempiere-grpc-server.dsc`
+
+2. **envoy.yaml Configuration**
+   - Add new services to the transcoding services list
+   - Update `proto_descriptor` path if filename changed
+   - File location: `docker-compose/envoy/envoy.yaml`
+
+3. **Docker-Compose Volume Mounts** ⚠️ **EASY TO FORGET!**
+   - Update ALL docker-compose files that define grpc-proxy
+   - Mount the descriptor file into container's `/data/` directory
+   - Files to update:
+     - `10c-grpc_proxy_service_standard.yml`
+     - `docker-compose-standard.yml`
+     - `docker-compose-auth.yml`
+     - Any other compose files with grpc-proxy
+
+**Example:**
+```yaml
+# In docker-compose grpc-proxy volumes:
+volumes:
+  - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+  - ./envoy/definitions/adempiere-grpc-server.dsc:/data/adempiere-grpc-server.dsc:ro
+  - ./envoy/definitions/adempiere-report-engine-service.dsc:/data/adempiere-report-engine-service.dsc:ro
+```
+
+```yaml
+# In envoy.yaml:
+typed_config:
+  "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
+  proto_descriptor: "/data/adempiere-grpc-server.dsc"
+  services:
+    - form.out_bound_order.OutBoundOrderService
+    - form.payment_allocation.PaymentAllocation
+```
+
+**Verification:**
+```bash
+# Check descriptor contains service:
+grep -a "ServiceName" docker-compose/envoy/definitions/adempiere-grpc-server.dsc
+
+# Verify mount in docker-compose:
+grep "adempiere-grpc-server" docker-compose/10c-grpc_proxy_service_standard.yml
+
+# Test envoy startup:
+docker logs adempiere-ui-gateway.envoy.grpc.proxy
+```
+
+**Date learned:** 2026-02-10 (learned the hard way!)
+
+---
+
 ## Docker Compose Patterns
 
 ### Modular Service Composition

@@ -91,3 +91,36 @@ Track recent changes, ongoing work, and current context here.
 - Actual deployment may differ from git due to manual .env changes
 - Always verify actual running versions vs git when troubleshooting
 - Configuration uses STANDARD stack with SHW customizations
+
+---
+
+### 2026-02-10 - Fixed Envoy Proxy Startup Failure
+**What was done:**
+- Diagnosed and fixed envoy proxy crash: "Could not find 'form.out_bound_order.OutBoundOrderService' in the proto descriptor"
+- Updated docker-compose volume mounts to include new `.dsc` proto descriptor file
+- Replaced old `.pb` file with new `.dsc` file containing updated service definitions
+
+**Problem:**
+- Commit c7beb9c (2026-02-02) added new gRPC services to envoy.yaml and created new `.dsc` descriptor file
+- BUT forgot to update docker-compose to mount the new file
+- Envoy crashed on startup because it couldn't find the new service definitions
+
+**Solution Applied (commit c7103fa):**
+- Changed volume mount in `10c-grpc_proxy_service_standard.yml`:
+  - FROM: `./envoy/definitions/adempiere-grpc-server.pb:/data/adempiere-grpc-server.pb:ro`
+  - TO: `./envoy/definitions/adempiere-grpc-server.dsc:/data/adempiere-grpc-server.dsc:ro`
+- Updated same in `docker-compose-standard.yml` and `docker-compose-auth.yml`
+- Updated envoy.yaml proto_descriptor path from `.pb` to `.dsc`
+- Deleted old `.pb` file
+
+**New Services Added:**
+- `form.out_bound_order.OutBoundOrderService`
+- `form.payment_allocation.PaymentAllocation` (moved from old location)
+- `form.trial_balance_drillable.TrialBalanceDrillable` (moved from old location)
+
+**Context/Notes:**
+- This is a common pitfall: updating envoy.yaml but forgetting to update docker-compose volumes
+- The three-step pattern documented in learned-patterns.md must be followed
+- Always verify descriptor file is mounted after adding new gRPC services
+- Issue occurred between commits c51d7c8 (working) and 20b3208 (failing)
+- Error files archived in: `/home/westfalia/Westfalia-Projekte/Kaltmann/.../20260208-Error_envoy_proxy/English/`

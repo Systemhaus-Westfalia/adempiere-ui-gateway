@@ -19,6 +19,63 @@ Document bugs, gotchas, workarounds, and debugging tips here.
 
 ---
 
+## Envoy Proxy / gRPC Issues
+
+### Envoy Crashes: "Could not find service in proto descriptor"
+**Symptoms:**
+- Container `adempiere-ui-gateway.envoy.grpc.proxy` fails to start (exit code 1)
+- Log shows: `transcoding_filter: Could not find 'form.out_bound_order.OutBoundOrderService' in the proto descriptor`
+- Other services start successfully, but envoy blocks dependent services (nginx gateway)
+
+**Cause:**
+- envoy.yaml was updated to transcode new gRPC services (OutBoundOrderService, PaymentAllocation, TrialBalanceDrillable)
+- New proto descriptor file (`.dsc`) was added with service definitions
+- **BUT** docker-compose volumes were NOT updated to mount the new descriptor file
+- Envoy couldn't find the service definitions because the file wasn't available in the container
+
+**Root Cause - The Three-Step Update Pattern:**
+When adding new gRPC services, THREE things must be updated:
+1. ✅ Proto descriptor file (`.dsc` or `.pb`) - add service definitions
+2. ✅ `envoy.yaml` - add services to transcoding list
+3. ⚠️ **Docker-compose volumes** - mount the updated descriptor file ← **This was missed!**
+
+**Solution:**
+Update all docker-compose files that define the grpc-proxy service to mount the correct descriptor file:
+
+1. Change in `10c-grpc_proxy_service_standard.yml`:
+   ```yaml
+   # OLD (wrong):
+   - ./envoy/definitions/adempiere-grpc-server.pb:/data/adempiere-grpc-server.pb:ro
+
+   # NEW (correct):
+   - ./envoy/definitions/adempiere-grpc-server.dsc:/data/adempiere-grpc-server.dsc:ro
+   ```
+
+2. Update the same in:
+   - `docker-compose-standard.yml`
+   - `docker-compose-auth.yml`
+   - Any other compose files that define grpc-proxy
+
+3. Update `envoy.yaml` proto_descriptor path:
+   ```yaml
+   proto_descriptor: "/data/adempiere-grpc-server.dsc"  # Changed from .pb to .dsc
+   ```
+
+**Timeline:**
+- 2026-02-02 (commit c7beb9c): Added `.dsc` file + new services to envoy.yaml, but forgot docker-compose update
+- 2026-02-08 to 2026-02-10: Error discovered and investigated
+- 2026-02-10 (commit c7103fa): Fixed by updating docker-compose volume mounts
+
+**How to Diagnose:**
+1. Check if service definition exists: `grep -a "ServiceName" path/to/descriptor.dsc`
+2. Check what's mounted: `cat docker-compose/10c-grpc_proxy_service_standard.yml | grep -A 10 "volumes:"`
+3. Compare commits: `git diff working_commit..failing_commit docker-compose/envoy/`
+
+**Date discovered:** 2026-02-08
+**Date resolved:** 2026-02-10
+
+---
+
 ## Deployment & Configuration
 
 ### Server Has Local .env Modifications Not in Git
