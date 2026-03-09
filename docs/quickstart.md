@@ -140,7 +140,22 @@ sudo ./start-all.sh
 ```
 
 ### Check Application
-Start on a browser: ```http://<HOST_IP>/webui``` or ```http://<HOST_IP>/vue```
+
+**With SSL (Production):**
+- Main Gateway: `https://<HOST_IP>/`
+- ZK UI: `https://<HOST_IP>/webui`
+- Vue UI: `https://<HOST_IP>/vue`
+- MinIO Console: `https://minio.<HOST_IP>/`
+- DKron Dashboard: `https://dkron.<HOST_IP>/`
+- Kafdrop: `https://kafdrop.<HOST_IP>/`
+- OpenSearch Dashboard: `https://opensearch.<HOST_IP>/`
+
+**Without SSL (Development/Local):**
+- Main Gateway: `http://<HOST_IP>/`
+- ZK UI: `http://<HOST_IP>/webui`
+- Vue UI: `http://<HOST_IP>/vue`
+
+**Note:** SSL certificates are automatically obtained on first startup if a domain is configured. All HTTP traffic is automatically redirected to HTTPS.
 
 ---
 
@@ -167,4 +182,3 @@ A: **No!** All services run inside Docker containers. You only need Docker itsel
 ---
 
 [Back to README](../README.md) | [Next: System Requirements](./system-requirements.md)
-

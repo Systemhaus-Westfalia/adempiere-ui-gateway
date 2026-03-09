@@ -23,6 +23,7 @@ Due to the technology used, it is highly recommended to have a good knowledge of
 
 ### Benefits of the Application
 - In its simplest form, it can be used as a demo of the latest -or any desired- ADempiere version.
+- **Automatic SSL/TLS certificates** with Let's Encrypt for secure HTTPS access
 - No big installation hassle for getting it running: just execute the shell script **start-all.sh** .
 - It can run on different hosts just by changing
   - the target IP to the one of the host or
@@ -47,6 +48,8 @@ Please follow the links for detailed information.
 - [Installation](docs/installation.md)
 - [Display Services](docs/services.md)
 - [Security Information](docs/security.md)
+- [SSL/TLS Configuration](docs/ssl-configuration.md)
+- [Wildcard DNS Setup](docs/wildcard-dns.md)
 - [Backup and Restore](docs/backup-restore.md)
 - [Debugging](docs/debugging.md)
 - [Debugging Vue Frontend](docs/debugging-vue-frontend.md)
