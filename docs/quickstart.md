@@ -2,19 +2,16 @@
 
 > **💡 Important: No Java Installation Required**
 >
-> You do NOT need to install Java, JDK, or any Java tools on your computer.
-> Java runs inside the Docker containers and is already included in the images.
+> You do NOT need to install Java, JDK, or any Java tools on your computer.  
+> Java runs inside the Docker containers and is already included in the images.  
 > This is one of the main benefits of using Docker!
-
-### Prerequisites
-Make sure you have installed [Git](https://git-scm.com/downloads) and [Docker](https://docs.docker.com/engine/install/).
 
 ### What You Need
 
 ✓ Docker (20.10 or later)
 ✓ Docker Compose (v2.16.0 or later)
 ✓ Git
-✓ Python
+✓ Python 3.10 or later (required for the `generate_env.py` script)
 
 ### What You DON'T Need
 
@@ -23,126 +20,69 @@ Make sure you have installed [Git](https://git-scm.com/downloads) and [Docker](h
 ✗ PostgreSQL (runs inside containers)
 ✗ nginx (runs inside containers)
 
-**Everything except Docker, Docker Compose, and Git runs inside containers!**
+**Everything except Docker, Docker Compose, Git, and Python runs inside containers!**
 
 **Security benefit:** This isolation minimizes your host's attack surface. Software running only in containers cannot directly compromise your host system, even if vulnerabilities exist.
 
-### Clone the repository
+### Clone the Repository
+
 ```bash
 git clone https://github.com/adempiere/adempiere-ui-gateway.git
-```
-
-### Change to directory
-Once the repository is cloned, go to the _Docker Compose_ directory
-```bash
+cd adempiere-ui-gateway
 cd docker-compose
 ```
 
-### Set values
-Get the IP of your machine (here a linux host connected via WiFi):
-```bash
-ip addr show | grep wlp3s0
-```
+### Set Host-Specific Values
 
-Replace on file `override.env` the value of variable **HOST_IP** with your host IP:
-```bash
-cp override_template.env override.env
-```
-### Set values
-You have two recommended ways to set host-specific values (e.g. IP, external ports, credentials):
+You have two ways to set host-specific values (e.g. IP address, external ports, credentials):
 
-- Option A (recommended): create or edit a local override file so you don't modify the template shipped in the repo.
-	1. Copy the provided example template:
-	```bash
-	cp docker-compose/override_template.env docker-compose/override.env
-	```
-	2. Edit only the variables you want to change (example: `HOST_IP`, `POSTGRES_EXTERNAL_PORT`):
-	```bash
-	nano docker-compose/override.env
-	```
+- **Option A — recommended:** create a local `override.env` so you don't modify the versioned template.  
 
-- Option B (less recommended): directly edit `docker-compose/env_template.env`. Be careful not to commit sensitive values.
-	- To find your host IP (example for Wi‑Fi interface `wlp3s0`):
-	```bash
-	ip addr show | grep wlp3s0
-	```
-	- Then open the template and update `HOST_IP`:
-	```bash
-	nano docker-compose/env_template.env
-	```
+    1. Copy the provided example template:
+     ```bash
+     cp override_template.env override.env
+     ```
+    2. Edit only the variables you want to change (e.g. `HOST_IP`, `POSTGRES_EXTERNAL_PORT`):
+     ```bash
+     nano override.env
+     ```
+  - `override.env` is git-ignored — your local values will never be accidentally committed.
+  - `start-all.sh` detects `override.env` and automatically generates a merged `.env` from it.
 
-Notes:
-- Use `override.env` to keep local changes out of git (the repo already ignores `docker-compose/override.env`).
-- Variable names must match exactly those used in `env_template.env` (the generator resolves references like `${VAR}` recursively).
+- **Option B — less recommended:** directly edit `env_template.env`. Be careful not to commit sensitive values.  
+      ```bash
+      nano env_template.env
+      ```  
 
-Generate `.env` using the provided wrapper (requires Python 3.10+):
-```bash
-cd docker-compose
-./generate-env.sh override.env .env
-# or directly with python:
-python3 generate_env.py env_template.env override.env .env
-```
+    To find your host IP (example for Wi-Fi interface `wlp3s0`):  
+      ```bash
+      ip addr show | grep wlp3s0
+      ```
 
+**Notes on variable resolution:**  
+- `generate_env.py` resolves `${VAR}` and `$VAR` references recursively.   
+      For example: if `override.env` sets `HOST_IP=192.0.2.10`, all template variables that reference `${HOST_IP}` will be expanded accordingly.  
+- You can also call the generator manually:
+    ```bash
+  ./generate-env.sh override.env .env    
+    # or directly:  
+    python3 generate_env.py env_template.env override.env .env
+    ```
 
-### Generate .env (optional — recommended if you want to override values)
-You can create a small `override.env` with only the variables you want to change and generate a merged `.env` that preserves template order and comments.
+### Start the Stack
 
-Example `override.env` (only override what you need):
-```
-### Generate .env (optional — recommended when using overrides)
-If you created `docker-compose/override.env` the repository includes a generator that merges it with the template and resolves variable references.
-
-Example `docker-compose/override.env` (only the variables you want to change):
-```
-# local overrides
-HOST_IP=192.0.2.10
-POSTGRES_EXTERNAL_PORT=55433
-OPENSEARCH_PORT=9300
-```
-
-Generate the merged `.env` (from repo root):
-```bash
-cd docker-compose
-
-# preferred wrapper (calls the Python generator and validates):
-./generate-env.sh override.env .env
-
-# or call the script directly:
-python3 generate_env.py env_template.env override.env .env
-```
-
-Behavior notes:
-- `generate_env.py` resolves `${VAR}` and `$VAR` recursively (up to a convergence limit). If you set `KAFKA_BROKER_EXTERNAL_PORT=${KAFKA_BROKER_PORT}` in `override.env` and `KAFKA_BROKER_PORT=29092`, the final `.env` will contain `KAFKA_BROKER_EXTERNAL_PORT=29092` and any template entries that reference it (e.g. `KAFKA_EXTERNAL_BROKERCONNECT="${HOST_IP}:${KAFKA_BROKER_EXTERNAL_PORT}"`) will be expanded accordingly.
-- `start-all.sh` will: use `docker-compose/override.env` (if present) to generate `.env`; if `.env` already exists and no `override.env` is present, it will keep the existing `.env` and will not overwrite it.
-
-Start the stack:
 ```bash
 ./start-all.sh
 ```
 
+This script automatically generates `.env` (merging `env_template.env` with `override.env` if present), then starts all services. See [Profiles](./profiles.md) for starting specific service combinations.
 
-### Start Services
-Start on a console with either command:
-```bash
-sudo docker compose up
-```
-Or
-```bash
-sudo docker compose --profile all up
-```
-Or
-```bash
-COMPOSE_PROFILES="all" sudo docker compose up
-```
-Or
-```bash
-sudo ./start-all.sh
-```
+### Check the Application
 
 ### Check Application
 
 **With SSL (Production):**
-- Main Gateway: `https://<HOST_IP>/`
+- Landing page / Main Gateway: `https://<HOST_IP>/`
 - ZK UI: `https://<HOST_IP>/webui`
 - Vue UI: `https://<HOST_IP>/vue`
 - MinIO Console: `https://minio.<HOST_IP>/`
@@ -151,9 +91,11 @@ sudo ./start-all.sh
 - OpenSearch Dashboard: `https://opensearch.<HOST_IP>/`
 
 **Without SSL (Development/Local):**
-- Main Gateway: `http://<HOST_IP>/`
+- Landing pAGE / Main Gateway: `http://<HOST_IP>/`
 - ZK UI: `http://<HOST_IP>/webui`
 - Vue UI: `http://<HOST_IP>/vue`
+
+Replace `<HOST_IP>` with the value you set for `HOST_IP` in your configuration.
 
 **Note:** SSL certificates are automatically obtained on first startup if a domain is configured. All HTTP traffic is automatically redirected to HTTPS.
 
@@ -163,13 +105,13 @@ sudo ./start-all.sh
 
 **Q: Do I need to install Java on my computer?**
 
-A: **No!** Java runs inside the Docker containers. The Docker images already contain Java - you don't need to install it on your host machine. You only need Docker, Docker Compose, and Git.
+A: **No!** Java runs inside the Docker containers. The Docker images already contain Java — you don't need to install it on your host machine. You only need Docker, Docker Compose, Git, and Python.
 
 **Security benefit:** Keeping Java only in containers (not on your host) reduces your attack surface. If Java were installed on the host, it could potentially be exploited to execute undesired programs. Docker's isolation protects your host system.
 
 **Q: Why do I see Java version numbers in the documentation?**
 
-A: Those refer to the Java version running INSIDE the containers, not on your host.
+A: Those refer to the Java version running inside the containers, not on your host.
 
 **Q: What if I want to compile ADempiere source code?**
 
@@ -178,6 +120,24 @@ A: Then you would need Java on your host for development. But for simply running
 **Q: Do I need to install PostgreSQL, nginx, or other services?**
 
 A: **No!** All services run inside Docker containers. You only need Docker itself.
+
+---
+
+### Key Configuration Variables  
+The primary configuration file is `docker-compose/env_template.env`.  
+Edit it to customise your deployment, or use `override.env` for host-specific values.  
+`start-all.sh` automatically generates `.env` from them — do not create `.env` manually.
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `COMPOSE_PROJECT_NAME` | Project/client name; all container names are derived from this | `adempiere-ui-gateway` |
+| `HOST_IP` | IP address or domain where the stack is accessible | `erp-adempiere.example.com` |
+| `POSTGRES_IMAGE` | PostgreSQL Docker image version | `postgres:14.5` |
+| `ADEMPIERE_GITHUB_VERSION` | ADempiere database seed version downloaded on first start | `3.9.4` |
+| `POSTGRES_EXTERNAL_PORT` | External port for PostgreSQL access (develop mode) | `55432` |
+| `NETWORK_SUBNET` | Docker bridge network subnet | `192.168.100.0/24` |
+
+For the complete variable reference, open `docker-compose/env_template.env` — it contains inline comments for every variable.
 
 ---
 

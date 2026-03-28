@@ -239,13 +239,10 @@ docker container inspect --format='{{.Config.Env}}' adempiere-ui-gateway.grpc-se
 
 ### View Merged Docker Compose Configuration
 
-Renders the actual configuration that will be applied to Docker:
+Renders the actual configuration that will be applied to Docker. Run this while the stack is running (so `.env` exists):
 
 ```bash
-# Copy environment file
-cp env_template.env .env
-
-# View merged configuration
+# View merged configuration (stack must be running, or .env must exist)
 docker compose convert
 
 # This shows:
@@ -260,6 +257,8 @@ docker compose convert
 - Verify configuration before starting stack
 - Check which ports are exposed
 - Confirm volume mount paths
+
+**Note:** `.env` is generated automatically by `start-all.sh`. It exists while the stack is running and is deleted by `stop-all.sh`. Do not create it manually.
 
 ---
 
@@ -714,6 +713,46 @@ See [Troubleshooting - Network Issues](./troubleshooting.md#network-and-access-i
    ```
 
 See [Troubleshooting - Database Issues](./troubleshooting.md#database-issues).
+
+### Envoy Crashes: "Could Not Find Service in Proto Descriptor"
+
+**Symptoms:**
+- `adempiere-ui-gateway.envoy-grpc-proxy` fails to start (exit code 1)
+- Log shows: `transcoding_filter: Could not find 'form.some_service.SomeService' in the proto descriptor`
+- Dependent services (nginx) also fail to start
+
+**Cause:** When adding new gRPC services, three things must be updated — and the docker-compose volume mount is the easiest to forget.
+
+**Three-step checklist — all three are required:**
+
+1. **Proto descriptor file** (`.dsc`) — regenerate from source `.proto` files using `protoc`; must include ALL services (old + new)
+   - Location: `docker-compose/envoy/definitions/adempiere-grpc-server.dsc`
+
+2. **`envoy.yaml`** — add new services to the transcoding services list; update `proto_descriptor` path if filename changed
+   - Location: `docker-compose/envoy/envoy.yaml`
+
+3. **Volume mounts in `docker-compose.yml`** ← **easy to forget!** — mount the descriptor file into the container's `/data/` directory
+
+**Example volume mount:**
+```yaml
+volumes:
+  - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+  - ./envoy/definitions/adempiere-grpc-server.dsc:/data/adempiere-grpc-server.dsc:ro
+```
+
+**Verification:**
+```bash
+# Check descriptor contains the service:
+grep -a "SomeService" docker-compose/envoy/definitions/adempiere-grpc-server.dsc
+
+# Verify volume mount is present in docker-compose.yml:
+grep "adempiere-grpc-server.dsc" docker-compose/docker-compose.yml
+
+# Check envoy startup log:
+docker container logs adempiere-ui-gateway.envoy-grpc-proxy
+```
+
+---
 
 ### Slow Performance
 

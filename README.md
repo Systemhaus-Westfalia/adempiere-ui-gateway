@@ -16,24 +16,24 @@ It basically consists of a *docker compose* project that defines in a *docker-co
 
 A configuration file (_env_template.env_) defines all modifiable values (e.g. release versions, ports, container names etc.) to be used in the *docker-compose.yml* file; also a Docker Compose Profile defines the stack, i.e. the services to be used. Any combination of the services offered is possible with the help of Docker Compose "profiles".
 
-When executed e.g. with the command _docker compose up_ or the shell script _start-all.sh_, the *docker compose* project eventually runs the services defined in *docker-compose.yml* file as Docker containers.
-The running Docker containers comprise the application stack.
+When executed with the shell script _start-all.sh_, the script first generates the runtime configuration file _.env_ from _env_template.env_ (and _override.env_ if present), then starts the *docker compose* project with the selected profile. Only the services matching the chosen profile are started as Docker containers; together they comprise the application stack.
 
-Due to the technology used, it is highly recommended to have a good knowledge of [Docker](https://docs.docker.com/get-started/) and [Docker Compose](https://docs.docker.com/compose/) to understand and work properly with this application. It is also useful to know how each container works.
+Due to the technology used, it is highly recommended to have a good knowledge of [Docker](https://docs.docker.com/get-started/) and [Docker Compose](https://docs.docker.com/compose/) to understand, customise, and administer this application properly. It is also useful to know how each container works.
 
 ### Benefits of the Application
 - In its simplest form, it can be used as a demo of the latest -or any desired- ADempiere version.
 - **Automatic SSL/TLS certificates** with Let's Encrypt for secure HTTPS access
 - No big installation hassle for getting it running: just execute the shell script **start-all.sh** .
-- It can run on different hosts just by changing
-  - the target IP to the one of the host or
-  - the client name
-- Completly configurable: any value can be changed for the whole application in the configuration file **env_template.env**.
+- It can run on different hosts just by changing  
+    - the target IP to the one of the host or  
+    - the client name
+- Fully configurable: all stack parameters — hostnames, ports, image versions, database settings, and more — are defined in a single configuration file, **env_template.env**.   
+    Machine-specific overrides can be placed in **override.env** without touching the versioned template.
 - Single containers or images can be updated and/or replaced easily, making deployments and tests speedy.
 - Separation of concerns: every service implements one and only one solution.
 - The timezone and location for all containers are the same as the hosts'.
 - Ideal for testing situations due to its ease of configuration and execution.
-- No need of deep knowledge of ADempiere Installation, Application Server Installation, Docker, Images or Postgres.
+- No need of deep knowledge of ADempiere Installation, Application Server Installation, Docker, Images or Postgres just to get the stack running.
 - Every container, image and object is unique, derived from a configuration file.
 - New services can be easily added.
 
@@ -58,3 +58,9 @@ Please follow the links for detailed information.
 - [License](./LICENSE)
 
 - See installation prerequisites in [Installation](docs/installation.md) (Python 3.10+ required for the generator script).
+
+### Branch Information
+
+- **`main`** — upstream base; use for pull requests to the adempiere org
+- **`feature/SHW_General`** — production branch used by active Systemhaus-Westfalia production sites
+- **`adempiere-trunk`** — current development branch: complete Systemhaus-Westfalia stack, starting point for migration to the adempiere org
