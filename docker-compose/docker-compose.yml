@@ -780,7 +780,7 @@ services:
     labels:
      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
       - ./nginx/letsencrypt/certs:/etc/nginx/certs:rw
       - ./nginx/letsencrypt/vhost.d:/etc/nginx/vhost.d:rw
       - ./nginx/letsencrypt/html:/usr/share/nginx/html:rw
