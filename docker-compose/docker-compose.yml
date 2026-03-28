@@ -784,7 +784,7 @@ services:
       - ./nginx/letsencrypt/certs:/etc/nginx/certs:rw
       - ./nginx/letsencrypt/vhost.d:/etc/nginx/vhost.d:rw
       - ./nginx/letsencrypt/html:/usr/share/nginx/html:rw
-      - ./nginx/letsencrypt/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/letsencrypt/conf.d:/etc/nginx/conf.d:rw
     networks:
       - adempiere_network
 
