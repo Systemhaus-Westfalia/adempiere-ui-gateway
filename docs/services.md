@@ -140,22 +140,27 @@ For detailed architecture information including health checks and dependencies, 
 - **Service Name:** `dictionary-rs`
 - **Container Name:** `adempiere-ui-gateway.dictionary-rs`
 - **Image:** `ghcr.io/adempiere/dictionary-rs:1.6.5`
-- **Purpose:** High-performance dictionary service written in Rust
+- **Purpose:** High-performance caching layer for ADempiere's application dictionary (windows, forms, processes, browsers, menus, roles).  
+  Consumes dictionary change events from Kafka, indexes them in OpenSearch, and serves REST queries from the cache — bypassing the Java gRPC server for these lookups (~47 ms vs ~1 s).
 - **Profiles:** `all, cache`
 - **Access:** `dictionary-rs:50051` (internal, via Envoy)
-- **Dependencies:** PostgreSQL, OpenSearch
+- **Dependencies:** PostgreSQL, OpenSearch, Kafka
 - **Health Check:** 90s startup, 30s interval, 10s timeout
+- **Documentation:** See [Dictionary-RS Service](./services-dictionary-rs.md)
 
 ### Processor Service
 - **Service Name:** `adempiere-processor`
 - **Container Name:** `adempiere-ui-gateway.processor`
-- **Image:** `marcalwestf/adempiere-processors-service:alpine-1.1.18`
+- **Image:** `marcalwestf/adempiere-processors-service:alpine-1.1.19`
 - **Purpose:** Background job execution and scheduled tasks
 - **Profiles:** `all, scheduler`
-- **Access:** Internal only (no external ports)
+- **Access:** Port **8899** (DKron Envoy Process Monitor)
 - **Dependencies:** PostgreSQL, gRPC Server, Kafka
 - **Health Check:** 120s startup, 30s interval, 10s timeout
 - **Security Note:** Never expose this service externally (see [Security](./security.md))
+
+**DKron Envoy Process Monitor**
+![26-DKron-Browser png](https://github.com/user-attachments/assets/01bf6316-89fd-4c4b-b309-49f08e20263b)
 
 ---
 
