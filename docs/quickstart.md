@@ -79,15 +79,25 @@ This script automatically generates `.env` (merging `env_template.env` with `ove
 
 ### Check the Application
 
-Open in a browser:
+### Check Application
 
-| URL | Service |
-|-----|---------|
-| `http://<HOST_IP>/` | Landing page |
-| `http://<HOST_IP>/webui` | ZK UI (classic) |
-| `http://<HOST_IP>/vue` | Vue UI (modern) |
+**With SSL (Production):**
+- Landing page / Main Gateway: `https://<HOST_IP>/`
+- ZK UI: `https://<HOST_IP>/webui`
+- Vue UI: `https://<HOST_IP>/vue`
+- MinIO Console: `https://minio.<HOST_IP>/`
+- DKron Dashboard: `https://dkron.<HOST_IP>/`
+- Kafdrop: `https://kafdrop.<HOST_IP>/`
+- OpenSearch Dashboard: `https://opensearch.<HOST_IP>/`
+
+**Without SSL (Development/Local):**
+- Landing pAGE / Main Gateway: `http://<HOST_IP>/`
+- ZK UI: `http://<HOST_IP>/webui`
+- Vue UI: `http://<HOST_IP>/vue`
 
 Replace `<HOST_IP>` with the value you set for `HOST_IP` in your configuration.
+
+**Note:** SSL certificates are automatically obtained on first startup if a domain is configured. All HTTP traffic is automatically redirected to HTTPS.
 
 ---
 

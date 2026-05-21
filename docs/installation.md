@@ -32,6 +32,33 @@ docker compose version
     Docker Compose version v2.17.2
 ```
 
+##### Domain and SSL Requirements (Optional but Recommended)
+
+For production deployments with automatic SSL certificates:
+
+**Domain Configuration:**
+- Register a domain name (e.g., `yourcompany.com`)
+- Point the domain to your server's public IP address
+- Create DNS records:
+  ```
+  yourdomain.com          A      YOUR_SERVER_IP
+  *.yourdomain.com        A      YOUR_SERVER_IP
+  ```
+
+**SSL Certificate (Automatic with Let's Encrypt):**
+- The stack includes automatic SSL certificate management
+- No manual certificate installation required
+- Certificates renew automatically
+
+**Firewall Configuration:**
+- Open ports 80 and 443 in your cloud firewall
+- Port 80 is required for HTTP-01 ACME challenges
+- Port 443 serves HTTPS traffic
+
+**For Local Development:**
+- See `docs/wildcard-dns.md` for local domain setup
+- Use `mkcert` for self-signed certificates
+
 ### 2. Clone This Repository
 ```Shell
 git clone https://github.com/adempiere/adempiere-ui-gateway

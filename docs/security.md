@@ -341,101 +341,230 @@ Development (additional):
 
 ## HTTPS/SSL Configuration
 
-⚠️ **Currently not configured.** The stack runs on HTTP (port 80) by default.
-
 ### Why HTTPS is Important
 
-- Encrypts data in transit
-- Prevents man-in-the-middle attacks
-- Required for PCI compliance (if processing payments)
-- Required for GDPR compliance
-- Builds user trust
+HTTPS (HTTP Secure) is critical for web application security and user trust:
+
+- **Data Encryption**: Encrypts all data transmitted between client and server, preventing eavesdropping and man-in-the-middle attacks
+- **Authentication**: Verifies that users are communicating with the legitimate website, not an imposter
+- **Data Integrity**: Ensures data cannot be modified during transmission
+- **PCI Compliance**: Required for processing credit card payments
+- **SEO Benefits**: Search engines favor HTTPS websites in rankings
+- **User Trust**: Modern browsers show security indicators for HTTPS sites
+- **Legal Requirements**: GDPR and other regulations require encrypted data transmission
+
+**Without HTTPS, sensitive data like login credentials, API keys, and business information are transmitted in plain text and can be intercepted by anyone on the network.**
 
 ### Implementation Options
 
-#### Option 1: Let's Encrypt with Certbot (Recommended)
+The stack supports multiple SSL implementation approaches:
 
-**Advantages:**
-- Free SSL certificates
-- Automatic renewal
-- Widely trusted
+1. **nginx-proxy + ACME Companion (Recommended/Default)**
+   - Automatic certificate issuance and renewal
+   - Let's Encrypt integration
+   - Zero manual certificate management
+   - Production-ready for most deployments
 
-**Implementation:**
+2. **Manual Certificate Management**
+   - Upload your own certificates
+   - Suitable for enterprise CA certificates
+   - Requires manual renewal process
 
-1. **Prerequisites:**
-   - Domain name pointing to your server
-   - Ports 80 and 443 open in cloud firewall
+3. **Self-Signed Certificates (Development Only)**
+   - For local development and testing
+   - Not trusted by browsers
+   - Cannot be used in production
 
-2. **Install Certbot on host:**
+4. **Cloud Load Balancer SSL Termination**
+   - AWS ALB/ELB, Azure Application Gateway, etc.
+   - Offload SSL to cloud infrastructure
+   - Additional cost but simplified management
+
+**Default Configuration:** nginx-proxy + ACME Companion
+
+✅ **Configured with nginx-proxy and Let's Encrypt ACME Companion**
+
+The stack includes automatic SSL certificate management using:
+- **nginx-proxy**: Reverse proxy with automatic SSL termination
+- **acme-companion**: Automatic certificate issuance and renewal from Let's Encrypt
+
+### Current SSL Setup
+
+#### Services with SSL Certificates
+
+The following services are configured with automatic SSL certificates:
+
+| Service | Domain | Description |
+|---------|--------|-------------|
+| **Main Gateway** | `https://erp-adempiere.westfalia-it.com` | Landing page and API gateway |
+| **MinIO (S3)** | `https://minio.erp-adempiere.westfalia-it.com` | Object storage console |
+| **ZK UI** | `https://zk.erp-adempiere.westfalia-it.com` | Classic ADempiere interface |
+| **Vue UI** | `https://vue.erp-adempiere.westfalia-it.com` | Modern ADempiere interface |
+| **DKron** | `https://dkron.erp-adempiere.westfalia-it.com` | Job scheduler dashboard |
+| **Kafdrop** | `https://kafdrop.erp-adempiere.westfalia-it.com` | Kafka cluster viewer |
+| **OpenSearch** | `https://opensearch.erp-adempiere.westfalia-it.com` | Search engine dashboard |
+
+#### Automatic Features
+
+- **Certificate Issuance**: Automatic SSL certificate generation on first startup
+- **Renewal**: Certificates renew automatically before expiration
+- **HTTP to HTTPS Redirect**: All HTTP traffic automatically redirected to HTTPS
+- **Wildcard Support**: Ready for wildcard certificates if needed
+
+### Configuration Details
+
+#### Docker Services
+
+```yaml
+# nginx-proxy service
+nginx-proxy:
+  image: nginxproxy/nginx-proxy:1.10.0-alpine
+  ports:
+    - "80:80"
+    - "443:443"
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - ./nginx/letsencrypt/certs:/etc/nginx/certs:rw
+    - ./nginx/letsencrypt/vhost.d:/etc/nginx/vhost.d:rw
+    - ./nginx/letsencrypt/html:/usr/share/nginx/html:rw
+    - ./nginx/letsencrypt/conf.d:/etc/nginx/conf.d:ro
+  labels:
+    - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"
+
+# acme-companion service
+letsencrypt-acme:
+  image: nginxproxy/acme-companion:2.6.3
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - volume_nginx_acme:/etc/acme.sh
+    - ./nginx/letsencrypt/certs:/etc/nginx/certs:rw
+  environment:
+    - DEFAULT_EMAIL=admin@erp-adempiere.westfalia-it.com
+    - NGINX_PROXY_CONTAINER=adempiere-ui-gateway.nginx-proxy
+```
+
+#### Environment Variables
+
+```bash
+# In env_template.env
+HOST_IP=erp-adempiere.westfalia-it.com
+NGINX_LETSENCRYPT_EMAIL=admin@${HOST_IP}
+NGINX_LETSENCRYPT_PROXY_IMAGE=nginxproxy/nginx-proxy:1.10.0-alpine
+NGINX_LETSENCRYPT_ACME_IMAGE=nginxproxy/acme-companion:2.6.3
+```
+
+#### Service Configuration
+
+Each SSL-enabled service includes these environment variables:
+
+```yaml
+environment:
+  VIRTUAL_HOST: service.${HOST_IP}
+  VIRTUAL_PORT: 8080  # Service port
+  LETSENCRYPT_HOST: service.${HOST_IP}
+  LETSENCRYPT_EMAIL: ${NGINX_LETSENCRYPT_EMAIL}
+```
+
+### Prerequisites
+
+1. **Domain Name**: Point your domain to the server IP
+2. **DNS Records**:
+   ```
+   erp-adempiere.westfalia-it.com     A     YOUR_SERVER_IP
+   *.erp-adempiere.westfalia-it.com   A     YOUR_SERVER_IP
+   ```
+3. **Firewall**: Open ports 80 and 443 in your cloud firewall
+4. **Email**: Valid email for Let's Encrypt notifications
+
+### Starting with SSL
+
+```bash
+cd docker-compose/
+./start-all.sh -d all  # Includes nginx-proxy and acme-companion
+```
+
+### Certificate Management
+
+#### Manual Certificate Operations
+
+**Check certificate status:**
+```bash
+docker exec adempiere-ui-gateway.letsencrypt-acme /app/cert_status
+```
+
+**Force renewal:**
+```bash
+docker exec adempiere-ui-gateway.letsencrypt-acme /app/force_renew
+```
+
+**View logs:**
+```bash
+docker logs adempiere-ui-gateway.letsencrypt-acme
+```
+
+#### Certificate Storage
+
+Certificates are stored in:
+- **Container**: `/etc/nginx/certs/`
+- **Host**: `./nginx/letsencrypt/certs/`
+- **ACME data**: Docker volume `volume_nginx_acme`
+
+### Troubleshooting SSL
+
+#### Common Issues
+
+1. **Certificate not issued**
+   - Check domain DNS resolution
+   - Verify ports 80/443 are open
+   - Check acme-companion logs
+
+2. **Certificate expired**
+   - acme-companion renews automatically
+   - Manual renewal: `docker exec ... /app/force_renew`
+
+3. **Mixed content warnings**
+   - Ensure all internal links use HTTPS
+   - Check nginx configuration for protocol redirects
+
+#### Local Development
+
+For local testing with custom domains:
+
+1. **Use mkcert for local certificates:**
    ```bash
-   sudo apt update
-   sudo apt install certbot python3-certbot-nginx
+   # Install mkcert
+   sudo apt install mkcert
+   mkcert -install
+
+   # Generate certificates
+   mkcert "*.domain-local.com" domain-local.com
    ```
 
-3. **Obtain certificate:**
-   ```bash
-   sudo certbot certonly --standalone -d yourdomain.com
-   ```
+2. **Configure DNS wildcard** (see `wildcard-dns.md`)
 
-4. **Mount certificates into nginx container:**
+3. **Mount certificates:**
    ```yaml
-   # In docker-compose.yml, nginx service:
    volumes:
-     - /etc/letsencrypt:/etc/letsencrypt:ro
+     - ./certs:/etc/nginx/certs:ro
    ```
 
-5. **Update nginx configuration:**
-   ```nginx
-   server {
-       listen 443 ssl;
-       server_name yourdomain.com;
+### Security Benefits
 
-       ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-       ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+- **End-to-end encryption**: All traffic encrypted in transit
+- **Automatic renewal**: No manual certificate management
+- **Trusted certificates**: Let's Encrypt certificates trusted by all browsers
+- **HSTS headers**: Automatic strict transport security
+- **A+ SSL rating**: Modern cipher suites and protocols
 
-       # ... rest of configuration
-   }
+### Migration from HTTP
 
-   # Redirect HTTP to HTTPS
-   server {
-       listen 80;
-       server_name yourdomain.com;
-       return 301 https://$server_name$request_uri;
-   }
-   ```
+If upgrading from HTTP-only setup:
 
-6. **Setup auto-renewal:**
-   ```bash
-   sudo crontab -e
-   # Add:
-   0 3 * * * certbot renew --quiet --post-hook "docker compose -f /path/to/docker-compose.yml restart nginx-ui-gateway"
-   ```
-
-#### Option 2: Cloudflare Proxy (Easy Alternative)
-
-**Advantages:**
-- Free SSL certificate
-- DDoS protection
-- CDN included
-- No server configuration needed
-
-**Implementation:**
-
-1. Point your domain to Cloudflare nameservers
-2. Add A record pointing to your server IP
-3. Enable "Proxied" (orange cloud icon)
-4. SSL/TLS mode: "Flexible" (Cloudflare ↔ User encrypted, Cloudflare ↔ Server unencrypted)
-
-**Note:** This provides encryption between users and Cloudflare, but not between Cloudflare and your server. For full encryption, use "Full" or "Full (strict)" mode with Option 1.
-
-#### Option 3: Corporate/Commercial Certificate
-
-For enterprise deployments with existing PKI:
-
-1. Obtain certificate from your CA
-2. Mount certificate files into nginx container
-3. Configure nginx to use them
-4. Manage renewal according to your CA's process
+1. **Backup current configuration**
+2. **Update env_template.env** with your domain
+3. **Start with SSL**: `./start-all.sh -d all`
+4. **Update bookmarks** to use HTTPS URLs
+5. **Test all services** with new HTTPS URLs
 
 ---
 

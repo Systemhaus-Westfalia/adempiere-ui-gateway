@@ -274,29 +274,32 @@ For detailed architecture information including health checks and dependencies, 
 
 All services are accessed via the `HOST_IP` variable defined in `env_template.env`. Replace `${HOST_IP}` with your server's IP address or domain name.
 
-| Service | URL | Default Port | Notes |
-|---------|-----|--------------|-------|
-| **Landing Page** | `http://${HOST_IP}/` | 80 | Main entry point |
-| **ZK UI** | `http://${HOST_IP}/webui` | 80 | Classic interface |
-| **Vue UI** | `http://${HOST_IP}/vue` | 80 | Modern interface |
-| **gRPC API** | `http://${HOST_IP}/api` | 80 | REST/gRPC endpoints |
-| **OpenSearch Dashboard** | `http://${HOST_IP}:5601` | 5601 | admin/admin |
-| **Kafdrop (Kafka)** | `http://${HOST_IP}:19000` | 19000 | Kafka monitoring |
-| **MinIO Console** | `http://${HOST_IP}:9090` | 9090 | minioadmin/minioadmin |
-| **DKron Scheduler** | `http://${HOST_IP}:8899` | 8899 | Job scheduling |
-| **Keycloak** | `http://${HOST_IP}:8080` | 8080 | admin/admin (auth profile) |
-| **PostgreSQL** | `${HOST_IP}:55432` | 55432 | postgres/postgres |
+**🔒 SSL/TLS Support:** When SSL is configured, all services automatically use HTTPS. HTTP traffic is redirected to HTTPS. See [SSL Configuration Guide](./ssl-configuration.md) for details.
+
+| Service | HTTP URL | HTTPS URL | Default Port | Notes |
+|---------|----------|-----------|--------------|-------|
+| **Landing Page** | `http://${HOST_IP}/` | `https://${HOST_IP}/` | 80/443 | Main entry point |
+| **ZK UI** | `http://${HOST_IP}/webui` | `https://${HOST_IP}/webui` | 80/443 | Classic interface |
+| **Vue UI** | `http://${HOST_IP}/vue` | `https://${HOST_IP}/vue` | 80/443 | Modern interface |
+| **gRPC API** | `http://${HOST_IP}/api` | `https://${HOST_IP}/api` | 80/443 | REST/gRPC endpoints |
+| **MinIO Console** | `http://${HOST_IP}:9090` | `https://minio.${HOST_IP}/` | 9090/443 | minioadmin/minioadmin |
+| **DKron Scheduler** | `http://${HOST_IP}:8899` | `https://dkron.${HOST_IP}/` | 8899/443 | Job scheduling |
+| **Kafdrop (Kafka)** | `http://${HOST_IP}:19000` | `https://kafdrop.${HOST_IP}/` | 19000/443 | Kafka monitoring |
+| **OpenSearch Dashboard** | `http://${HOST_IP}:5601` | `https://opensearch.${HOST_IP}/` | 5601/443 | admin/admin |
+| **Keycloak** | `http://${HOST_IP}:8080` | `https://${HOST_IP}:8080` | 8080 | admin/admin (auth profile) |
+| **PostgreSQL** | `${HOST_IP}:55432` | `${HOST_IP}:55432` | 55432 | postgres/postgres |
 
 ### Examples
 
 If `HOST_IP=192.168.1.100`:
-- Landing page: `http://192.168.1.100/`
-- ZK UI: `http://192.168.1.100/webui`
-- Kafdrop: `http://192.168.1.100:19000`
+- Landing page: `https://192.168.1.100/` (SSL enabled)
+- ZK UI: `https://192.168.1.100/webui`
+- MinIO: `https://minio.192.168.1.100/`
 
 If `HOST_IP=erp.example.com`:
-- Landing page: `http://erp.example.com/`
-- Vue UI: `http://erp.example.com/vue`
+- Landing page: `https://erp.example.com/`
+- Vue UI: `https://erp.example.com/vue`
+- Kafdrop: `https://kafdrop.erp.example.com/`
 - PostgreSQL: `erp.example.com:55432` (in PGAdmin)
 
 ---
