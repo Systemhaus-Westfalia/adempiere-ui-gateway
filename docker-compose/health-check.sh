@@ -109,6 +109,7 @@ check_container "$P.s3-gateway-rs"         "S3 Gateway RS"
 check_container "$P.envoy-grpc-proxy"      "Envoy gRPC Proxy"
 check_container "$P.keycloak-service"      "Keycloak"
 check_container "$P.scheduler-dkron"       "Dkron Scheduler"
+check_container "$P.svfe-api-firmador"     "SVFE API Firmador (e-invoicing)"
 
 # ── 3. Frontend & Gateway ─────────────────────────────────────────────────────
 echo ""; echo -e "${BLUE}${BOLD}─── 3. Frontend & Gateway ──────────────────────────────────${NC}"
