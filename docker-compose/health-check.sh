@@ -1,7 +1,9 @@
 #!/bin/bash
 # =============================================================================
 #  ADempiere UI Gateway — Service Health Check
-#  Usage: ./health-check.sh
+#  Usage: ./health-check.sh [profile]
+#         Without profile: checks all containers that exist in Docker.
+#         With profile:    checks only containers belonging to that profile.
 # =============================================================================
 
 # ── Colors & icons ────────────────────────────────────────────────────────────
@@ -18,15 +20,36 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -f "$SCRIPT_DIR/.env" ] && source "$SCRIPT_DIR/.env"
 P="${COMPOSE_PROJECT_NAME:-adempiere-ui-gateway}"
 
+# ── Profile filter ────────────────────────────────────────────────────────────
+# When a profile is given, build the set of container names that belong to it
+# by querying docker compose. When omitted, all existing containers are checked.
+PROFILE="${1:-}"
+PROFILE_CONTAINERS=()
+if [ -n "$PROFILE" ] && [ "$PROFILE" != "all" ]; then
+    mapfile -t PROFILE_CONTAINERS < <(
+        COMPOSE_PROFILES="$PROFILE" docker compose --project-directory "$SCRIPT_DIR" \
+            -f "$SCRIPT_DIR/docker-compose.yml" config 2>/dev/null \
+        | grep 'container_name:' | awk '{print $2}'
+    )
+fi
+
+# Returns 0 if the container should be checked, 1 if it should be skipped.
+in_profile() {
+    [ "${#PROFILE_CONTAINERS[@]}" -eq 0 ] && return 0  # no filter: check all
+    local c; for c in "${PROFILE_CONTAINERS[@]}"; do [ "$c" = "$1" ] && return 0; done
+    return 1
+}
+
 # ── Helper: check container running/health status ─────────────────────────────
 check_container() {
     local container=$1 label=$2
-    printf "  %-50s" "$label"
+    in_profile "$container" || return 0
     local status health
     status=$($DOCKER inspect --format='{{.State.Status}}' "$container" 2>/dev/null)
     if [ -z "$status" ]; then
-        echo -e "${RED}${FAIL}  container not found${NC}"; ((FAIL_COUNT++)); return 1
+        return 0  # container not in active profile — skip silently
     fi
+    printf "  %-50s" "$label"
     health=$($DOCKER inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container" 2>/dev/null)
     if [ "$status" = "running" ]; then
         case "$health" in
@@ -43,12 +66,13 @@ check_container() {
 # ── Helper: check init container — exited cleanly is expected and OK ──────────
 check_init_container() {
     local container=$1 label=$2
-    printf "  %-50s" "$label"
+    in_profile "$container" || return 0
     local status
     status=$($DOCKER inspect --format='{{.State.Status}}' "$container" 2>/dev/null)
     if [ -z "$status" ]; then
-        echo -e "${RED}${FAIL}  container not found${NC}"; ((FAIL_COUNT++)); return 1
+        return 0  # container not in active profile — skip silently
     fi
+    printf "  %-50s" "$label"
     if [ "$status" = "exited" ]; then
         local exit_code
         exit_code=$($DOCKER inspect --format='{{.State.ExitCode}}' "$container" 2>/dev/null)
@@ -64,17 +88,20 @@ check_init_container() {
     fi
 }
 
-# ── Helper: check HTTP endpoint ───────────────────────────────────────────────
+# ── Helper: check HTTP endpoint (retries up to 3×, 10 s apart) ─────────────────
 check_http() {
     local label=$1 url=$2 accepted="${3:-200}"
     printf "  %-50s" "$label"
-    local code
-    code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$url" 2>/dev/null)
-    if echo "$accepted" | grep -qw "$code"; then
-        echo -e "${GREEN}${OK}  HTTP $code  →  $url${NC}"; ((PASS_COUNT++))
-    else
-        echo -e "${RED}${FAIL}  HTTP $code  →  $url${NC}";  ((FAIL_COUNT++))
-    fi
+    local code attempt retries=3 delay=10
+    for attempt in $(seq 1 $retries); do
+        code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$url" 2>/dev/null)
+        if echo "$accepted" | grep -qw "$code"; then
+            echo -e "${GREEN}${OK}  HTTP $code  →  $url${NC}"; ((PASS_COUNT++))
+            return
+        fi
+        [ "$attempt" -lt "$retries" ] && sleep "$delay"
+    done
+    echo -e "${RED}${FAIL}  HTTP $code  →  $url${NC}"; ((FAIL_COUNT++))
 }
 
 # ── Helper: get container's internal Docker network IP ────────────────────────
@@ -87,6 +114,7 @@ echo ""
 echo -e "${BOLD}═══════════════════════════════════════════════════════════${NC}"
 echo -e "${BOLD}  ADempiere UI Gateway — Service Health Check${NC}"
 echo    "  Project : $P"
+echo    "  Profile : ${PROFILE:-all}"
 echo    "  Date    : $(date '+%Y-%m-%d %H:%M:%S')"
 echo -e "${BOLD}═══════════════════════════════════════════════════════════${NC}"
 
@@ -131,7 +159,12 @@ echo ""; echo -e "${BLUE}${BOLD}─── 5. HTTP Endpoint Checks ────�
 # mappings or LAN IP, so the script works regardless of network location.
 
 _http_by_container() {
-    local label=$1 container=$2 port=$3 path="${4:-/}" accepted="${5:-200}"
+    local label=$1 container=$2 port=$3 path="${4:-/}" accepted="${5:-200}" guard="${6:-$2}"
+    # guard: container whose existence/profile membership gates this check.
+    # Defaults to container (the one whose IP is used for the request).
+    # Set guard to a backend container when the HTTP request goes via a proxy (e.g. nginx).
+    in_profile "$guard" || return 0
+    $DOCKER inspect "$guard" &>/dev/null || return 0  # not in active profile — skip
     local ip
     ip=$(container_ip "$container")
     if [ -n "$ip" ]; then
@@ -151,9 +184,9 @@ MINIO_PORT="${S3_CONSOLE_PORT:-9090}"
 DICT_PORT="${DICTIONARY_RS_PORT:-7878}"
 OS_PORT="${OPENSEARCH_PORT:-9200}"
 
-_http_by_container "Nginx (root)"                "$P.nginx-ui-gateway"      $NGINX_PORT   "/"        "200 301 302"
-_http_by_container "Vue UI  (via nginx /vue)"    "$P.nginx-ui-gateway"      $NGINX_PORT   "/vue"     "200"
-_http_by_container "ZK UI   (via nginx /webui)"  "$P.nginx-ui-gateway"      $NGINX_PORT   "/webui"   "200 301 302"
+_http_by_container "Nginx (root)"                "$P.nginx-ui-gateway"      $NGINX_PORT   "/"        "200 301 302" "$P.site"
+_http_by_container "Vue UI  (via nginx /vue)"    "$P.nginx-ui-gateway"      $NGINX_PORT   "/vue"     "200"         "$P.vue-ui"
+_http_by_container "ZK UI   (via nginx /webui)"  "$P.nginx-ui-gateway"      $NGINX_PORT   "/webui"   "200 301 302" "$P.zk"
 _http_by_container "Kafdrop"                     "$P.kafdrop"               $KAFDROP_PORT "/"        "200"
 _http_by_container "OpenSearch Dashboards"       "$P.opensearch-dashboards" $OSDASH_PORT  "/"        "200 301 302"
 _http_by_container "Keycloak"                    "$P.keycloak-service"      $KEYCLOAK_PORT "/"       "200 301 302"
