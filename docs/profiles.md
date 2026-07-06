@@ -17,25 +17,60 @@ This application exploits the [Docker Compose Profiles](https://docs.docker.com/
 It basically defines a group of services that can be started or stopped together; this group is named a "profile".  
 In the file docker-compose.yml the profiles are defined for every service; this can be changed anytime accordingly to the needs.
 
-By calling *docker compose up* or *./start-all.sh* plus a parameter, the parameter is interpreted as the profile to be used.
+All three management scripts accept an optional profile argument (default: `all`):
 
-#### Services activated with _Default/Standard_ Profile (No parameter or empty string)
-This is the **production-ready stack** with all core ADempiere services. This profile runs when you execute `./start-all.sh` without any parameter, or with `-d default`.
+```bash
+./start-all.sh [profile]
+./health-check.sh [profile]
+./full-restart-with-healthcheck.sh [profile]
+```
 
- - postgres-service
- - adempiere-site
- - adempiere-zk
- - vue-ui
- - vue-grpc-server
- - adempiere-grpc-server
- - grpc-proxy
- - ui-gateway
+**`start-all.sh`** — starts only the services belonging to the given profile:
+```bash
+./start-all.sh          # starts all services (default)
+./start-all.sh vue      # starts only the vue-profile services
+./start-all.sh zk       # starts only the zk-profile services
+```
+
+**`health-check.sh`** — checks only the containers belonging to the given profile:
+```bash
+./health-check.sh       # checks all containers that exist in Docker
+./health-check.sh vue   # checks only vue-profile containers (regardless of what else is running)
+./health-check.sh zk    # checks only zk-profile containers
+```
+Containers that do not exist (not started) or are excluded by the profile are silently skipped — they do not count as failures.
+
+**`full-restart-with-healthcheck.sh`** — stops everything, restarts with the given profile, waits for the stack to be ready, and runs the health check:
+```bash
+./full-restart-with-healthcheck.sh        # restart with all services
+./full-restart-with-healthcheck.sh vue    # restart with only vue-profile services
+./full-restart-with-healthcheck.sh zk     # restart with only zk-profile services
+```
+The script discovers which containers were actually started after `start-all.sh` runs, so the wait and health-check steps automatically cover exactly the services that belong to the active profile.
+
+---
+
+| Profile | Key | Description |
+|---------|-----|-------------|
+| [Default (no argument)](#services-activated-with-no-argument-the-all-profile) | _(no parameter)_ | Runs the `all` profile — the complete stack |
+| [Authentication](#services-activated-with-authentication-profile) | `auth` | Core stack with Keycloak identity provider |
+| [Dictionary Cache](#services-activated-with-dictionary-cache-profile) | `cache` | Adds Kafka + OpenSearch + dictionary-rs caching layer |
+| [Dictionary Report Engine](#services-activated-with-dictionary-report-engine-profile) | `report` | Adds report engine service |
+| [Processor Scheduler](#services-activated-with-processor-scheduler-profile) | `scheduler` | Adds ADempiere processor and Dkron scheduler |
+| [S3 Storage](#services-activated-with-s3-storage-profile) | `storage` | Adds MinIO S3 storage and gateway |
+| [ADempiere-Vue UI](#services-activated-with-adempiere-vue-ui-profile) | `vue` | Minimal stack: Vue UI + gRPC only |
+| [ADempiere-Zk UI](#services-activated-with-adempiere-zk-ui-profile) | `zk` | Minimal stack: ZK UI only |
+| [All](#services-activated-with-all-profile) | `all` | Complete stack with all available services |
+| [Multiple profiles](#multiple-profiles) | combined | Combining multiple profile keys |
+
+#### Services activated with no argument (the `all` profile)
+There is **no** profile literally named `default` or `standard`. Running `./start-all.sh` **without any argument** activates the **`all`** profile — the complete stack with every service (listed under [All](#services-activated-with-all-profile) below).
 
 ![ADempiere Standard Architecture](architecture/architecture-all.png)
 
 Start with:
 ```bash
-./start-all.sh
+./start-all.sh          # equivalent to ./start-all.sh all
 ```
 Or:
 ```bash
@@ -213,7 +248,7 @@ COMPOSE_PROFILES="report,vue,zk" docker compose up -d
 
 > **Important:** the profiles must be comma-separated in a single argument. A space-separated form such as `./start-all.sh report vue zk` does **not** work — `start-all.sh` only reads the first argument, so only `report` would be activated (and `COMPOSE_PROFILES` itself is comma-separated, never space-separated).
 
-**Note:** The default profile (empty string `''`) is always included unless you explicitly specify other profiles.
+**Note:** Only the profiles you pass are activated — there is no automatically-included "default" profile. A service starts only when one of its declared profiles is active (the empty-string profile `''` behaves like `all`, starting the full stack).
 
 
 ---
