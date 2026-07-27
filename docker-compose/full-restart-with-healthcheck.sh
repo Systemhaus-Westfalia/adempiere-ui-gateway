@@ -33,6 +33,7 @@ if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
 if $SUDO docker ps &>/dev/null; then DOCKER="$SUDO docker"; else DOCKER="docker"; fi
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+format_duration() { local s=$1; printf '%dm %ds' $((s / 60)) $((s % 60)); }
 
 require_file() {
     local path=$1 label=$2
@@ -116,6 +117,10 @@ require_file "$STOP_SCRIPT" "Stop script"
 require_file "$START_SCRIPT" "Start script"
 require_file "$HEALTH_CHECK_SCRIPT" "Health check script"
 
+dur_stop=0
+dur_start=0
+dur_healthy=0
+
 log "=== Step 1/6: Stopping all services ==="
 running_count=$($DOCKER ps --format '{{.Names}}' | grep -c "^${PROJECT_NAME}\." || true)
 if [ "$running_count" -gt 0 ]; then
@@ -125,7 +130,7 @@ if [ "$running_count" -gt 0 ]; then
         exit 1
     fi
     log "=== Step 2/6: Waiting for shutdown ==="
-    wait_for_stop
+    _t=$SECONDS; wait_for_stop; dur_stop=$((SECONDS - _t))
 else
     log "No '$PROJECT_NAME' containers are running. Skipping stop."
 fi
@@ -153,10 +158,15 @@ mapfile -t RUNNING_CONTAINERS < <(
 log "Monitoring ${#RUNNING_CONTAINERS[@]} long-running container(s)."
 
 log "=== Step 4/6: Waiting for startup ==="
-wait_for_start
+_t=$SECONDS; wait_for_start; dur_start=$((SECONDS - _t))
 
 log "=== Step 5/6: Waiting for healthchecks to complete ==="
-wait_for_healthy
+_t=$SECONDS; wait_for_healthy; dur_healthy=$((SECONDS - _t))
+
+log "=== Timing summary ==="
+log "  Shutdown:     $(format_duration $dur_stop)"
+log "  Startup:      $(format_duration $dur_start)"
+log "  Healthchecks: $(format_duration $dur_healthy)"
 
 log "=== Step 6/6: Running health check ==="
 bash "$HEALTH_CHECK_SCRIPT" "$PROFILE"
