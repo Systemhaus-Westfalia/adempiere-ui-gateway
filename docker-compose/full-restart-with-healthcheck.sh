@@ -167,6 +167,7 @@ log "=== Timing summary ==="
 log "  Shutdown:     $(format_duration $dur_stop)"
 log "  Startup:      $(format_duration $dur_start)"
 log "  Healthchecks: $(format_duration $dur_healthy)"
+log "  Total:        $(format_duration $((dur_stop + dur_start + dur_healthy)))"
 
 log "=== Step 6/6: Running health check ==="
 bash "$HEALTH_CHECK_SCRIPT" "$PROFILE"
