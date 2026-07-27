@@ -123,6 +123,7 @@ dur_healthy=0
 
 log "=== Step 1/6: Stopping all services ==="
 running_count=$($DOCKER ps --format '{{.Names}}' | grep -c "^${PROJECT_NAME}\." || true)
+_t_stop=$SECONDS
 if [ "$running_count" -gt 0 ]; then
     log "Found $running_count running container(s). Calling stop script..."
     if ! bash "$STOP_SCRIPT"; then
@@ -130,12 +131,14 @@ if [ "$running_count" -gt 0 ]; then
         exit 1
     fi
     log "=== Step 2/6: Waiting for shutdown ==="
-    _t=$SECONDS; wait_for_stop; dur_stop=$((SECONDS - _t))
+    wait_for_stop
 else
     log "No '$PROJECT_NAME' containers are running. Skipping stop."
 fi
+dur_stop=$((SECONDS - _t_stop))
 
 log "=== Step 3/6: Starting all services (profile: $PROFILE) ==="
+_t_start=$SECONDS
 if ! bash "$START_SCRIPT" "$PROFILE"; then
     log "ERROR: Start script exited with a non-zero status. Aborting."
     exit 1
@@ -158,7 +161,8 @@ mapfile -t RUNNING_CONTAINERS < <(
 log "Monitoring ${#RUNNING_CONTAINERS[@]} long-running container(s)."
 
 log "=== Step 4/6: Waiting for startup ==="
-_t=$SECONDS; wait_for_start; dur_start=$((SECONDS - _t))
+wait_for_start
+dur_start=$((SECONDS - _t_start))
 
 log "=== Step 5/6: Waiting for healthchecks to complete ==="
 _t=$SECONDS; wait_for_healthy; dur_healthy=$((SECONDS - _t))
