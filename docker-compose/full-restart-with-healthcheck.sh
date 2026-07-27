@@ -163,12 +163,20 @@ _t=$SECONDS; wait_for_start; dur_start=$((SECONDS - _t))
 log "=== Step 5/6: Waiting for healthchecks to complete ==="
 _t=$SECONDS; wait_for_healthy; dur_healthy=$((SECONDS - _t))
 
-log "=== Timing summary ==="
-log "  Shutdown:     $(format_duration $dur_stop)"
-log "  Startup:      $(format_duration $dur_start)"
-log "  Healthchecks: $(format_duration $dur_healthy)"
-log "  Total:        $(format_duration $((dur_stop + dur_start + dur_healthy)))"
-
 log "=== Step 6/6: Running health check ==="
 bash "$HEALTH_CHECK_SCRIPT" "$PROFILE"
-exit $?
+_health_rc=$?
+
+CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+echo ""
+echo -e "${CYAN}${BOLD}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${CYAN}${BOLD}  ⏱  Restart Timing${NC}"
+echo -e "${CYAN}  Shutdown:     $(format_duration $dur_stop)${NC}"
+echo -e "${CYAN}  Startup:      $(format_duration $dur_start)${NC}"
+echo -e "${CYAN}  Healthchecks: $(format_duration $dur_healthy)${NC}"
+echo -e "${CYAN}  ─────────────────────${NC}"
+echo -e "${CYAN}${BOLD}  Total:        $(format_duration $((dur_stop + dur_start + dur_healthy)))${NC}"
+echo -e "${CYAN}${BOLD}═══════════════════════════════════════════════════════════${NC}"
+echo ""
+
+exit $_health_rc
