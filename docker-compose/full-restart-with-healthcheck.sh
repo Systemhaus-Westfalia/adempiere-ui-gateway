@@ -89,16 +89,20 @@ wait_for_healthy() {
     local elapsed=0
     while true; do
         local still_starting=0
+        local starting_names=()
         for container in "${RUNNING_CONTAINERS[@]}"; do
             local health
             health=$($DOCKER inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$container" 2>/dev/null)
-            [ "$health" = "starting" ] && still_starting=$((still_starting + 1))
+            if [ "$health" = "starting" ]; then
+                still_starting=$((still_starting + 1))
+                starting_names+=("$container")
+            fi
         done
         if [ "$still_starting" -eq 0 ]; then
             log "All container healthchecks have completed."
             return 0
         fi
-        log "  ($still_starting container(s) still initializing...)"
+        log "  ($still_starting container(s) still initializing...): $(IFS=', '; echo "${starting_names[*]}")"
         if [ "$elapsed" -ge "$START_TIMEOUT" ]; then
             log "WARNING: Timeout waiting for healthchecks ($still_starting still starting). Proceeding anyway."
             return 1
