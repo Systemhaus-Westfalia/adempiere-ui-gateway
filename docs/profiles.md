@@ -15,6 +15,7 @@ This application exploits the [Docker Compose Profiles](https://docs.docker.com/
 
 All three management scripts accept an optional profile argument (default: `all`):
 
+
 ```bash
 ./start-all.sh [profile]
 ./health-check.sh [profile]

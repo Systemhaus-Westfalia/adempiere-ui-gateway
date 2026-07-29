@@ -33,6 +33,7 @@ if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
 if $SUDO docker ps &>/dev/null; then DOCKER="$SUDO docker"; else DOCKER="docker"; fi
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+format_duration() { local s=$1; printf '%dm %ds' $((s / 60)) $((s % 60)); }
 
 require_file() {
     local path=$1 label=$2
@@ -89,16 +90,20 @@ wait_for_healthy() {
     local elapsed=0
     while true; do
         local still_starting=0
+        local starting_names=()
         for container in "${RUNNING_CONTAINERS[@]}"; do
             local health
             health=$($DOCKER inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$container" 2>/dev/null)
-            [ "$health" = "starting" ] && still_starting=$((still_starting + 1))
+            if [ "$health" = "starting" ]; then
+                still_starting=$((still_starting + 1))
+                starting_names+=("$container")
+            fi
         done
         if [ "$still_starting" -eq 0 ]; then
             log "All container healthchecks have completed."
             return 0
         fi
-        log "  ($still_starting container(s) still initializing...)"
+        log "  ($still_starting container(s) still initializing...): $(IFS=', '; echo "${starting_names[*]}")"
         if [ "$elapsed" -ge "$START_TIMEOUT" ]; then
             log "WARNING: Timeout waiting for healthchecks ($still_starting still starting). Proceeding anyway."
             return 1
@@ -112,8 +117,13 @@ require_file "$STOP_SCRIPT" "Stop script"
 require_file "$START_SCRIPT" "Start script"
 require_file "$HEALTH_CHECK_SCRIPT" "Health check script"
 
+dur_stop=0
+dur_start=0
+dur_healthy=0
+
 log "=== Step 1/6: Stopping all services ==="
 running_count=$($DOCKER ps --format '{{.Names}}' | grep -c "^${PROJECT_NAME}\." || true)
+_t_stop=$SECONDS
 if [ "$running_count" -gt 0 ]; then
     log "Found $running_count running container(s). Calling stop script..."
     if ! bash "$STOP_SCRIPT"; then
@@ -125,8 +135,10 @@ if [ "$running_count" -gt 0 ]; then
 else
     log "No '$PROJECT_NAME' containers are running. Skipping stop."
 fi
+dur_stop=$((SECONDS - _t_stop))
 
 log "=== Step 3/6: Starting all services (profile: $PROFILE) ==="
+_t_start=$SECONDS
 if ! bash "$START_SCRIPT" "$PROFILE"; then
     log "ERROR: Start script exited with a non-zero status. Aborting."
     exit 1
@@ -150,10 +162,25 @@ log "Monitoring ${#RUNNING_CONTAINERS[@]} long-running container(s)."
 
 log "=== Step 4/6: Waiting for startup ==="
 wait_for_start
+dur_start=$((SECONDS - _t_start))
 
 log "=== Step 5/6: Waiting for healthchecks to complete ==="
-wait_for_healthy
+_t=$SECONDS; wait_for_healthy; dur_healthy=$((SECONDS - _t))
 
 log "=== Step 6/6: Running health check ==="
 bash "$HEALTH_CHECK_SCRIPT" "$PROFILE"
-exit $?
+_health_rc=$?
+
+CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+echo ""
+echo -e "${CYAN}${BOLD}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${CYAN}${BOLD}  ⏱  Restart Timing${NC}"
+echo -e "${CYAN}  Shutdown:     $(format_duration $dur_stop)${NC}"
+echo -e "${CYAN}  Startup:      $(format_duration $dur_start)${NC}"
+echo -e "${CYAN}  Healthchecks: $(format_duration $dur_healthy)${NC}"
+echo -e "${CYAN}  ─────────────────────${NC}"
+echo -e "${CYAN}${BOLD}  Total:        $(format_duration $((dur_stop + dur_start + dur_healthy)))${NC}"
+echo -e "${CYAN}${BOLD}═══════════════════════════════════════════════════════════${NC}"
+echo ""
+
+exit $_health_rc
