@@ -62,8 +62,8 @@ docker ps -a --format "{{.ID}}: {{.Names}}"
 # List all services defined in docker-compose.yml
 docker compose config --services
 
-# Note: docker-compose.yml must exist
-# If not assembled yet, run: ./start-all.sh
+# Note: run this from the docker-compose/ directory, where the
+# committed docker-compose.yml lives (it is static, not generated)
 ```
 
 ### View Docker Images
@@ -123,9 +123,9 @@ docker compose rm -s -f postgresql-service
 docker compose up -d <service-name>
 
 # Example: Recreate ZK UI container
-docker compose stop adempiere-zk-service
-docker compose rm -f adempiere-zk-service
-docker compose up -d adempiere-zk-service
+docker compose stop adempiere-zk
+docker compose rm -f adempiere-zk
+docker compose up -d adempiere-zk
 ```
 
 **When to recreate:**
@@ -144,7 +144,8 @@ docker compose stop
 # Stop and remove containers (preserves volumes and data)
 docker compose down
 
-# For complete cleanup, see: ./stop-all.sh or ./stop-and-delete-all.sh
+# ./stop-all.sh              → docker compose down + removes .env (keeps volumes/data)
+# ./stop-and-delete-all.sh   → complete/destructive cleanup (also deletes volumes and images)
 ```
 
 ### Recreate All Services
@@ -418,7 +419,8 @@ docker exec -i adempiere-ui-gateway.postgresql \
   psql -U adempiere -d adempiere \
   < postgresql/postgres_backups/<your-backup-file>.backup
 
-# Automated backup script
+# Automated backup script (lives in docs/scripts/, run from the repo root)
+cd ..
 ./docs/scripts/04-backup-database.sh
 ```
 
@@ -576,7 +578,7 @@ For expected health check timings, see [Architecture - Health Checks](./architec
 
 ## Utility Scripts
 
-The project includes diagnostic scripts in `docs/scripts/` for common debugging tasks.
+The project includes diagnostic scripts in `docs/scripts/` for common debugging tasks. Unlike the rest of this guide, run these from the **repository root** (not `docker-compose/`) — the `./docs/scripts/...` paths below are relative to it.
 
 ### Timezone Diagnostic Scripts
 
@@ -666,12 +668,12 @@ See [Troubleshooting - Container Health Checks](./troubleshooting.md#container-h
 3. **Check backend service:**
    ```bash
    # For ZK UI
-   docker compose ps adempiere-zk-service
+   docker compose ps adempiere-zk
    docker container logs adempiere-ui-gateway.zk
 
    # For Vue UI
-   docker compose ps adempiere-vue-service
-   docker container logs adempiere-ui-gateway.vue
+   docker compose ps vue-ui
+   docker container logs adempiere-ui-gateway.vue-ui
    ```
 
 4. **Test from inside nginx:**
@@ -796,7 +798,7 @@ See [Troubleshooting - Performance Issues](./troubleshooting.md#performance-issu
 - **[Backup and Restore Guide](./backup-restore.md)** - Database operations
 - **[System Requirements](./system-requirements.md)** - Resource planning
 - **[Kafka Debugging Guide](./debugging-kafka.md)** - Kafka CLI testing (topics, produce, consume, consumer groups)
-- **Scripts README (TODO: not yet available)** - Diagnostic script documentation
+- **[Scripts README](./scripts/README.md)** - Diagnostic script documentation
 
 ---
 

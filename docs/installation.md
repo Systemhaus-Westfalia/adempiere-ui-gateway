@@ -121,7 +121,7 @@ Or name the profile explicitly:
 
 The script `start-all.sh [parameter]` carries out the steps of the automatic installation.
 
-Depending on the parameter -that BTW selects the profile- the script assembles the services out of file **docker-compose.yml** by including to the project only the services that have the profile set.
+Depending on the parameter -that BTW selects the profile- Docker Compose activates, from the static file **docker-compose.yml**, only the services that have the given profile set. The file is committed as-is; `start-all.sh` does not generate or assemble it — it just exports `COMPOSE_PROFILES` and runs `docker compose up`.
 
 If no flag and/or parameter is given, the call will default to `docker compose -f docker-compose.yml` for the services combination **all**.
 If directories `postgresql/postgres_database` and `postgresql/postgres_backups` do not exist, they are created.
@@ -138,11 +138,16 @@ Once the image have been downloaded, the container creation and start will last 
 
 #### c. Cases When Database Will Be Restored
 If
-- there is a file *seed.backup* (or as defined in `env_template.env`, variable `POSTGRES_RESTORE_FILE_NAME`) in directory `postgresql/postgres_backups`, and
-- the database as specified in `env_template.env`, variable `POSTGRES_DATABASE_NAME` does not exist in Postgres, and
-- directory `postgresql/postgres_database` does not exist.
+- the database `adempiere` does not exist in Postgres (the name is hardcoded in `postgresql/initdb.sh`; there is no `POSTGRES_DATABASE_NAME` variable), and
+- directory `postgresql/postgres_database` does not exist (or has no contents).
 
 *The database  will be restored*.
+
+The seed source is chosen automatically:
+- if a file *seed.backup* (or as defined in `env_template.env`, variable `POSTGRES_RESTORE_FILE_NAME`) exists in directory `postgresql/postgres_backups`, it is used;
+- otherwise a fixed ADempiere seed is downloaded from GitHub (version `ADEMPIERE_GITHUB_VERSION`, currently `3.9.4`).
+
+So the local seed file is **optional**: when it is absent, the restore falls back to the downloaded seed.
 
 #### d. Cases When Database Will Not Be Restored
 The execution of `postgresql/initdb.sh` will be skipped if
@@ -222,7 +227,14 @@ Feel free to change them accordingly to your wishes/purposes.
 There should be no need to change file `docker-compose.yml`.
 
 #### e. env_template.env and .env
-Once you have modified *env_template.env* as needed, run `start-all.sh` — it will automatically generate `.env` from `env_template.env` (and `override.env` if present) before starting Docker Compose. **Do not copy `env_template.env` to `.env` manually.**
+Once you have modified *env_template.env* as needed, run `start-all.sh` — it prepares `.env` before starting Docker Compose. **Do not copy `env_template.env` to `.env` manually.**
+
+How `start-all.sh` prepares `.env`:
+- if `override.env` exists, it **regenerates** `.env` on every run by merging `env_template.env` + `override.env` via `generate-env.sh`;
+- otherwise it copies `env_template.env` to `.env` **only if `.env` does not exist yet**;
+- if `.env` already exists and there is no `override.env`, the existing `.env` is **kept unchanged**.
+
+So when there is no `override.env`, editing `env_template.env` alone does **not** update an already-generated `.env`. To apply the change, edit `.env` directly, delete it first so it is recreated, or put the value in `override.env`.
 
 #### f. File initdb.sh (optional)
 Modify `postgresql/initdb.sh` as necessary, depending on what you may want to do at database first start.
@@ -332,6 +344,8 @@ To stop all Docker containers that were started with script `start-all.sh`, just
 cd docker-compose
 ./stop-all.sh
 ```
+
+This runs `docker compose down` (removes the containers and the network but **keeps** the database volume and its data) and removes the generated `.env` file. It does **not** delete the `docker-compose.yml` file, which is static and committed. To also delete volumes, images and data, use `stop-and-delete-all.sh` (see [Step 8](#8-delete-all-docker-objects)).
 
 ### 8. Delete All Docker Objects
 Sometimes, due to different reasons, you need to undo everything you have created on Docker and start anew. This is mostly in development, not in production.
