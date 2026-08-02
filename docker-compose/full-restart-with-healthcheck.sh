@@ -122,7 +122,10 @@ dur_start=0
 dur_healthy=0
 
 log "=== Step 1/6: Stopping all services ==="
-running_count=$($DOCKER ps --format '{{.Names}}' | grep -c "^${PROJECT_NAME}\." || true)
+# Only count containers that are actively running (not restarting or paused):
+# docker compose down hangs when containers are stuck in a restart loop,
+# so we skip it in that case and let docker compose up handle the cleanup.
+running_count=$($DOCKER ps --filter "status=running" --format '{{.Names}}' | grep -c "^${PROJECT_NAME}\." || true)
 _t_stop=$SECONDS
 if [ "$running_count" -gt 0 ]; then
     log "Found $running_count running container(s). Calling stop script..."
@@ -133,7 +136,7 @@ if [ "$running_count" -gt 0 ]; then
     log "=== Step 2/6: Waiting for shutdown ==="
     wait_for_stop
 else
-    log "No '$PROJECT_NAME' containers are running. Skipping stop."
+    log "No '$PROJECT_NAME' containers are actively running. Skipping stop."
 fi
 dur_stop=$((SECONDS - _t_stop))
 
