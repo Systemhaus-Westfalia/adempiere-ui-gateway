@@ -89,4 +89,7 @@ echo "Docker Compose will be executed with file: \"$DOCKER_COMPOSE_FILE\""
 COMPOSE_PROFILES=$PROFILES docker compose -f $DOCKER_COMPOSE_FILE up -d
 # COMPOSE_PROFILES=$PROFILES docker compose -f $DOCKER_COMPOSE_FILE up $DETACH
 
+# Ensure persistent_files is owned by the admin user so SFTP uploads work
+chown -R westfalia:westfalia postgresql/persistent_files
+
 echo "Docker Compose started"
